@@ -141,6 +141,23 @@ body {
   }
 }
 
+/* 떠 있는 목록·달력이 위에서 살짝 펼쳐지며 나타나도록 지정 */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+    translate: 0 -4px;
+  }
+}
+
+/* 바뀐 내용이 아래에서 살짝 떠오르며 나타나도록 지정 */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+
 @keyframes reveal {
   from {
     opacity: 0;
