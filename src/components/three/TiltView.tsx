@@ -1,7 +1,7 @@
 "use client";
 
 import { OrthographicCamera, View } from "@react-three/drei";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 type TiltViewProps = {
   width: number;
@@ -9,14 +9,15 @@ type TiltViewProps = {
   // 바닥을 내려다보는 각도(도) 지정
   elevation: number;
   className?: string;
+  style?: CSSProperties;
   children: ReactNode;
 };
 
 // 바닥 원이 납작한 타원으로 보이도록 비스듬히 내려다보는 3D 창 생성
-export function TiltView({ width, height, elevation, className = "", children }: TiltViewProps) {
+export function TiltView({ width, height, elevation, className = "", style, children }: TiltViewProps) {
   const a = (elevation * Math.PI) / 180;
   return (
-    <View className={`relative shrink-0 ${className}`} style={{ width, height }}>
+    <View className={`relative shrink-0 ${className}`} style={{ ...style, width, height }}>
       <OrthographicCamera
         makeDefault
         position={[0, Math.sin(a) * 500, Math.cos(a) * 500]}

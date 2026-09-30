@@ -8,13 +8,15 @@ type ObliqueViewProps = {
   width: number;
   height: number;
   className?: string;
+  // 깊이 1px 당 위로 밀리는 거리(px) 지정
+  slope?: number;
   children: ReactNode;
 };
 
 // Figma 등각 그림처럼 깊이 1px 당 오른쪽 위로 1px 밀리는 비스듬한 3D 창 생성
-export function ObliqueView({ width, height, className = "", children }: ObliqueViewProps) {
+export function ObliqueView({ width, height, className = "", slope = 1, children }: ObliqueViewProps) {
   // 깊이(z)가 멀어질수록 화면 오른쪽 위로 밀리도록 기울기 행렬 계산
-  const shear = useMemo(() => new Matrix4().makeShear(0, 0, 0, 0, -1, -1), []);
+  const shear = useMemo(() => new Matrix4().makeShear(0, 0, 0, 0, -1, -slope), [slope]);
   return (
     <View className={`relative shrink-0 ${className}`} style={{ width, height }}>
       <OrthographicCamera makeDefault position={[width / 2, -height / 2, 500]} zoom={1} near={1} far={2000} />
