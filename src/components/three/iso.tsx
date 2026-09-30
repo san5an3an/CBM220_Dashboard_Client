@@ -87,13 +87,16 @@ type IsoPrismProps = {
   phase?: number;
   onClick?: () => void;
   onHover?: (over: boolean) => void;
+  // 목표 높이까지 다 자랐을 때 한 번 알림 지정
+  onSettled?: () => void;
 };
 
 // 목표 높이까지 자라고 선택적으로 떠 있는 반투명 등각 기둥 표시
-export function IsoPrism({ token, side, height, position, shade, outline = false, bob = 0, phase = 0, onClick, onHover }: IsoPrismProps) {
+export function IsoPrism({ token, side, height, position, shade, outline = false, bob = 0, phase = 0, onClick, onHover, onSettled }: IsoPrismProps) {
   const mesh = useRef<Mesh>(null);
   const edge = useRef<{ position: { y: number } }>(null);
   const shown = useRef(0);
+  const settled = useRef(false);
   const geo = useMemo(() => isoBoxGeometry(token, shade), [token, shade]);
   const h = side / 2;
   const ring = useMemo(() => [[-h, 0, -h], [h, 0, -h], [h, 0, h], [-h, 0, h], [-h, 0, -h]] as [number, number, number][], [h]);
@@ -101,6 +104,10 @@ export function IsoPrism({ token, side, height, position, shade, outline = false
   useFrame(({ clock }, delta) => {
     // 높이가 목표까지 부드럽게 자라고 떠 있는 기둥은 위아래로 흔들리도록 갱신
     shown.current += (height - shown.current) * (1 - Math.exp(-delta * 4));
+    if (!settled.current && Math.abs(height - shown.current) <= Math.max(0.5, height * 0.02)) {
+      settled.current = true;
+      onSettled?.();
+    }
     const lift = bob ? Math.sin(clock.elapsedTime * 1.4 + phase) * bob : 0;
     if (mesh.current) {
       mesh.current.scale.set(side, Math.max(0.01, shown.current), side);

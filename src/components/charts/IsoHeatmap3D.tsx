@@ -54,6 +54,9 @@ type IsoHeatmap3DProps = {
 export function IsoHeatmap3D({ formations = ["401", "402", "403", "404", "405", "406"], cars = 10, values, live = true }: IsoHeatmap3DProps) {
   const [grid, setGrid] = useState(() => values ?? initial(formations.length, cars));
   const [hover, setHover] = useState<[number, number] | null>(null);
+  // 가장 높은 두 칸의 막대가 다 올라온 수를 세어 둘 다 끝나면 수치 표시
+  const [settled, setSettled] = useState(0);
+  const ready = settled >= 2;
   useInterval(() => {
     if (!live) return;
     const f = Math.floor(Math.random() * formations.length);
@@ -94,6 +97,7 @@ export function IsoHeatmap3D({ formations = ["401", "402", "403", "404", "405", 
             shade={SHADE}
             position={cellBase(f, c)}
             onHover={(over) => setHover(over ? [f, c] : null)}
+            onSettled={top2.some((t) => t.f === f && t.c === c) ? () => setSettled((n) => n + 1) : undefined}
           />
         ))}
       </IsoView>
@@ -115,26 +119,33 @@ export function IsoHeatmap3D({ formations = ["401", "402", "403", "404", "405", 
           </p>
         );
       })}
-      <svg className="pointer-events-none absolute inset-0 overflow-visible" width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
-        {top2.map(({ f, c, v }, i) => {
+      {ready && (
+        <svg className="pointer-events-none absolute inset-0 animate-[fade-in_400ms_ease-out] overflow-visible" width={W} height={H} viewBox={`0 0 ${W} ${H}`}>
+          {top2.map(({ f, c, v }, i) => {
+            const [ax, ay] = anchor(f, c, v);
+            const [tx, ty] = [ax + TAG_OFFSETS[i][0], ay + TAG_OFFSETS[i][1] + 12];
+            return (
+              <g key={`${f}-${c}`}>
+                <line x1={tx} y1={ty} x2={ax} y2={ay} strokeWidth={1} strokeDasharray="3 3" style={{ stroke: "var(--status-danger)" }} />
+                <circle cx={ax} cy={ay} r={3.5} style={{ fill: "var(--status-danger)", stroke: tint("--white", 90), strokeWidth: 1.5 }} />
+              </g>
+            );
+          })}
+        </svg>
+      )}
+      {ready &&
+        top2.map(({ f, c, v }, i) => {
           const [ax, ay] = anchor(f, c, v);
-          const [tx, ty] = [ax + TAG_OFFSETS[i][0], ay + TAG_OFFSETS[i][1] + 12];
           return (
-            <g key={`${f}-${c}`}>
-              <line x1={tx} y1={ty} x2={ax} y2={ay} strokeWidth={1} strokeDasharray="3 3" style={{ stroke: "var(--status-danger)" }} />
-              <circle cx={ax} cy={ay} r={3.5} style={{ fill: "var(--status-danger)", stroke: tint("--white", 90), strokeWidth: 1.5 }} />
-            </g>
+            <div
+              key={`${f}-${c}`}
+              className="pointer-events-none absolute -translate-1/2 animate-[fade-in_400ms_ease-out_both] transition-[left,top] duration-700"
+              style={{ left: ax + TAG_OFFSETS[i][0], top: ay + TAG_OFFSETS[i][1], animationDelay: "200ms" }}
+            >
+              <Tag tone="coral" label={`${v.toFixed(1)}%`} />
+            </div>
           );
         })}
-      </svg>
-      {top2.map(({ f, c, v }, i) => {
-        const [ax, ay] = anchor(f, c, v);
-        return (
-          <div key={`${f}-${c}`} className="pointer-events-none absolute -translate-1/2 transition-[left,top] duration-700" style={{ left: ax + TAG_OFFSETS[i][0], top: ay + TAG_OFFSETS[i][1] }}>
-            <Tag tone="coral" label={`${v.toFixed(1)}%`} />
-          </div>
-        );
-      })}
       {hover && (
         <div
           className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-[8px] border border-(--border-strong) bg-(--neutral-popover) px-2 py-1 whitespace-nowrap"
