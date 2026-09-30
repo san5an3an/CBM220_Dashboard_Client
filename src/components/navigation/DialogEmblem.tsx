@@ -22,13 +22,18 @@ export type EmblemTone = keyof typeof EMBLEM_TONE;
 const EDGE = 60 / Math.SQRT2;
 const SQUASH = 30 / (EDGE * Math.cos(Math.PI / 6));
 
+// 카메라가 30도 내려다봐 깊이 방향이 절반으로 눌리는 것을 반영해 화면에서 140×44 가 되는 궤도 반지름과 높이 지정
+const ORBIT_X = 70;
+const ORBIT_Z = 44;
+const ORBIT_Y = -36 / Math.cos(Math.PI / 6);
+
 // 큐브 발밑을 도는 궤도 타원의 점 목록 생성
 const ORBIT = Array.from({ length: 97 }, (_, i) => {
   const a = (i / 96) * Math.PI * 2;
-  return [Math.cos(a) * 70, -36, Math.sin(a) * 44] as [number, number, number];
+  return [Math.cos(a) * ORBIT_X, ORBIT_Y, Math.sin(a) * ORBIT_Z] as [number, number, number];
 });
 
-function Cube({ token }: { token: string }) {
+function Cube({ token, dashed }: { token: string; dashed: boolean }) {
   const spin = useRef<Group>(null);
   const spark = useRef<Mesh>(null);
   const color = useMemo(() => new Color(cssColor(token)), [token]);
@@ -44,7 +49,7 @@ function Cube({ token }: { token: string }) {
     }
     if (spark.current) {
       const a = t * 1.4;
-      spark.current.position.set(Math.cos(a) * 70, -36, Math.sin(a) * 44);
+      spark.current.position.set(Math.cos(a) * ORBIT_X, ORBIT_Y, Math.sin(a) * ORBIT_Z);
     }
   });
 
@@ -66,8 +71,8 @@ function Cube({ token }: { token: string }) {
           <lineBasicMaterial color={top} transparent opacity={0.9} />
         </lineSegments>
       </group>
-      <group rotation={[0, -Math.PI / 4, 0]}>
-        <Line points={ORBIT} color={color} lineWidth={1.6} transparent opacity={0.75} />
+      <group rotation={[0, Math.PI / 4, 0]}>
+        <Line points={ORBIT} color={color} lineWidth={1.6} transparent opacity={0.75} dashed={dashed} dashSize={6} gapSize={5} />
         <mesh ref={spark}>
           <sphereGeometry args={[2.4, 16, 16]} />
           <meshBasicMaterial color={top} />
@@ -80,10 +85,12 @@ function Cube({ token }: { token: string }) {
 type DialogEmblemProps = {
   tone?: EmblemTone;
   icon?: LucideIcon;
+  // 궤도 타원을 점선으로 그리도록 지정
+  dashedOrbit?: boolean;
 };
 
 // 다이얼로그 위쪽에 떠 있는 홀로그램 아이콘과 3D 큐브 엠블럼 표시
-export function DialogEmblem({ tone = "success", icon }: DialogEmblemProps) {
+export function DialogEmblem({ tone = "success", icon, dashedOrbit = false }: DialogEmblemProps) {
   const { token, Icon: DefaultIcon } = EMBLEM_TONE[tone];
   const Icon = icon ?? DefaultIcon;
   return (
@@ -93,7 +100,7 @@ export function DialogEmblem({ tone = "success", icon }: DialogEmblemProps) {
       <div className="absolute top-4 left-0 h-40 w-[180px]" style={{ filter: `drop-shadow(0 0 12px ${tint(token, 50)})` }}>
         <Canvas flat dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>
           <OrthographicCamera makeDefault zoom={1} position={[200, 163, 200]} near={1} far={1000} onUpdate={(c) => c.lookAt(0, 0, 0)} />
-          <Cube token={token} />
+          <Cube token={token} dashed={dashedOrbit} />
         </Canvas>
       </div>
       <div
