@@ -10,4 +10,5 @@ export const TEXT = {
   titleLarge: "text-[22px] leading-7 tracking-normal",
   headlineSmall: "text-[24px] leading-8 tracking-normal",
   displaySmall: "text-[36px] leading-[44px] tracking-normal",
+  displayMedium: "text-[45px] leading-[52px] tracking-normal",
 } as const;

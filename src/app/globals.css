@@ -370,6 +370,41 @@ body {
   }
 }
 
+/* 지표 뒤쪽 빛이 천천히 밝아졌다 흐려지도록 지정 */
+@keyframes glow-breathe {
+  0%,
+  100% {
+    opacity: 0.75;
+    scale: 0.92;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.06;
+  }
+}
+
+/* 남은 시간이 얼마 없을 때 링 빛이 깜빡이도록 지정 */
+@keyframes ring-alarm {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* 유리관 속 액체 윗면이 살짝 출렁이도록 지정 */
+@keyframes liquid-wobble {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -2px;
+  }
+}
+
 /* shadcn 기본 색 변수를 프로젝트 색 토큰에 연결 */
 :root {
   --background: var(--background-page);
