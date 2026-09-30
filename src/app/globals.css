@@ -405,6 +405,13 @@ body {
   }
 }
 
+/* 점선 무늬가 선의 시작에서 끝 방향으로 계속 흐르도록 지정 */
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+
 /* shadcn 기본 색 변수를 프로젝트 색 토큰에 연결 */
 :root {
   --background: var(--background-page);

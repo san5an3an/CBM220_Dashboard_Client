@@ -126,7 +126,7 @@ export function IsoHeatmap3D({ formations = ["401", "402", "403", "404", "405", 
             const [tx, ty] = [ax + TAG_OFFSETS[i][0], ay + TAG_OFFSETS[i][1] + 12];
             return (
               <g key={`${f}-${c}`}>
-                <line x1={tx} y1={ty} x2={ax} y2={ay} strokeWidth={1} strokeDasharray="3 3" style={{ stroke: "var(--status-danger)" }} />
+                <line x1={tx} y1={ty} x2={ax} y2={ay} strokeWidth={1} strokeDasharray="3 3" className="animate-[dash-flow_0.6s_linear_infinite]" style={{ stroke: "var(--status-danger)" }} />
                 <circle cx={ax} cy={ay} r={3.5} style={{ fill: "var(--status-danger)", stroke: tint("--white", 90), strokeWidth: 1.5 }} />
               </g>
             );
