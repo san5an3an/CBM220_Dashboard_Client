@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { carStatusAt, subscribeFormation } from "./formation";
 
 export type HealthLevel = "ok" | "warn";
 export type DeviceStatus = "normal" | "warning" | "danger";
@@ -26,10 +27,16 @@ export function statusOf(ratio: number): DeviceStatus {
 const pick = <T,>(list: T[]) => list[Math.floor(Math.random() * list.length)];
 const between = (min: number, max: number) => Math.floor(min + Math.random() * (max - min + 1));
 
-// 선택한 차량의 임의 값 생성
-function randomDetail(): CarDetail {
-  const ratio = between(3, 39);
-  const status = statusOf(ratio);
+// 상태별 이상비율 범위 지정
+const RATIO_RANGE: Record<DeviceStatus, [number, number]> = {
+  normal: [3, 9],
+  warning: [10, 19],
+  danger: [20, 39],
+};
+
+// 차량 상태 색에 맞는 범위에서 선택 차량 값 생성
+function randomDetail(status: DeviceStatus): CarDetail {
+  const ratio = between(...RATIO_RANGE[status]);
   const warnChance = status === "danger" ? 0.45 : status === "warning" ? 0.25 : 0.08;
   return {
     device: pick(DEVICES),
@@ -51,9 +58,12 @@ const listeners = new Set<() => void>();
 
 // 차량 선택 후 값 새로 생성
 export function selectCar(index: number) {
-  state = { index, detail: randomDetail() };
+  state = { index, detail: randomDetail(carStatusAt(index)) };
   listeners.forEach((l) => l());
 }
+
+// 편성이 바뀌면 선택 호차의 값을 새 상태에 맞게 다시 생성
+subscribeFormation(() => selectCar(state.index));
 
 function subscribe(listener: () => void) {
   listeners.add(listener);

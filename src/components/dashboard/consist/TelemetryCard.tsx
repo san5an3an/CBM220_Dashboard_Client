@@ -1,6 +1,6 @@
 "use client";
 
-import { ARRIVAL_MS, COUNT_MS, REVEAL_MS, useArrivalTick } from "./arrival";
+import { ARRIVAL_MS, COUNT_MS, introDelay, REVEAL_MS, useArrival } from "./arrival";
 import type { Telemetry } from "./data";
 import { useCountUp } from "./useCountUp";
 
@@ -12,10 +12,10 @@ const tint = (v: string, pct: number) => `color-mix(in srgb, var(${v}) ${pct}%, 
 
 export function TelemetryCard({ label, value, unit, tag, range, color, left }: Telemetry) {
   const c = `var(${color})`;
-  const tick = useArrivalTick();
+  const arrival = useArrival();
   // 카드가 나타난 뒤 숫자와 게이지 채우기 시작
-  const startAt = ARRIVAL_MS + REVEAL_MS;
-  const { shown, progress } = useCountUp(value, tick, COUNT_MS, startAt);
+  const startAt = introDelay(arrival) + ARRIVAL_MS + REVEAL_MS;
+  const { shown, progress } = useCountUp(value, arrival.tick, COUNT_MS, startAt);
   return (
     <div
       className={`absolute top-0 flex w-[236px] flex-col items-start gap-1.5 overflow-clip rounded-[16px] border px-4 py-3.5 ${left}`}

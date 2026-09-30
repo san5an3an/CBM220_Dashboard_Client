@@ -10,16 +10,20 @@ import {
   Float32BufferAttribute,
   Group,
   Matrix4,
+  type OrthographicCamera as OrthoCam,
+  PerspectiveCamera,
   Mesh,
   MeshBasicMaterial,
   Quaternion,
   Vector3,
 } from "three";
-import { ARRIVAL_MS, replayArrival, reveal, REVEAL_MS, useArrivalTick } from "../arrival";
+import { ARRIVAL_MS, easeInOut, INTRO_APPROACH_MS, introActive, INTRO_DEPART_MS, INTRO_HOLD_MS, INTRO_MS, introDelay, playIntro, reveal, REVEAL_MS, useArrival } from "../arrival";
 import { CARS, CONNECTORS } from "../data";
+import { useCarStates } from "../formation";
 import { inspectorLayout, selectCar, useSelection } from "../selection";
 import { AXIS_BACK, AXIS_RIGHT, AXIS_UP, cameraPosition, designToWorld, PX_PER_UNIT, SCENE_SCALE } from "../projection";
 import { cssColor, glowMaterial } from "./materials";
+import { CabEnvironment, NOSE } from "./CabFront";
 import { CAR_LENGTH, CAR_WIDTH, GROUND_Y, TrainCar } from "./TrainCar";
 
 const CAR_PITCH = 138;
@@ -27,6 +31,13 @@ const TRAIN_END = CAR_PITCH * (CARS.length - 1) + CAR_LENGTH;
 const BRACKET = { y: 83.7, z: -CAR_WIDTH / 2, from: 19, to: TRAIN_END + 19, drop: 12.4 };
 // 4K 화면 오른쪽 끝 밖에서 출발하도록 이동 거리 지정
 const ARRIVAL_DISTANCE = TRAIN_END + 2200;
+// 정면 연출 카메라를 선로 옆으로 비켜 세워 선로와 나란히 보도록 지정
+const INTRO_CAM = { x: -260, y: 16, side: 26, fov: 44 };
+// 선두 앞면이 출발하는 거리, 편성 번호가 보이게 서는 거리, 스쳐 지나가는 거리 지정
+const INTRO_FAR = 1600;
+const INTRO_NEAR = 66;
+const INTRO_PASS = -1500;
+
 const RAILS = [
   { z: -26.2, color: "--accent-cyan" },
   { z: -8.6, color: "--accent-violet" },
@@ -38,11 +49,27 @@ const FACING_CAMERA = new Quaternion().setFromRotationMatrix(new Matrix4().makeB
 // 디자인 픽셀을 월드 단위로 변환
 const px = (v: number) => v / SCENE_SCALE / PX_PER_UNIT;
 
+// 정면 연출용 원근 카메라와 평소 정사영 카메라 보관
+const cameras: { ortho: OrthoCam | null; intro: PerspectiveCamera } = {
+  ortho: null,
+  intro: new PerspectiveCamera(34, 16 / 9, 0.5, 9000),
+};
+
 // 캔버스 크기가 바뀌면 카메라 다시 배치
 function CameraRig() {
   const size = useThree((s) => s.size);
   const { zoom, position } = useMemo(() => cameraPosition(size.width, size.height), [size.width, size.height]);
-  return <OrthographicCamera makeDefault zoom={zoom} position={position} quaternion={FACING_CAMERA} near={1} far={6000} />;
+  return (
+    <OrthographicCamera
+      ref={(c: OrthoCam | null) => void (cameras.ortho = c)}
+      makeDefault
+      zoom={zoom}
+      position={position}
+      quaternion={FACING_CAMERA}
+      near={1}
+      far={6000}
+    />
+  );
 }
 
 function FloorGrid() {
@@ -235,27 +262,90 @@ function tapPosition(designX: number): [number, number, number] {
   return [designX - 176 + 0.582 * BRACKET.z, BRACKET.y, BRACKET.z];
 }
 
-// 열차가 오른쪽 화면 밖에서 들어와 감속하며 정차
-function ArrivingTrain({ children }: { children: ReactNode }) {
-  const ref = useRef<Group>(null);
+type ArrivingTrainProps = { selected: number; revealed: boolean };
+
+// 정면 연출이 있으면 원근 카메라로 열차가 다가와 편성 번호를 보여주고 스쳐 지나간 뒤, 오른쪽 화면 밖에서 들어와 감속하며 정차
+function ArrivingTrain({ selected, revealed }: ArrivingTrainProps) {
+  const rig = useRef<Group>(null);
   const start = useRef<number | null>(null);
-  const tick = useArrivalTick();
+  const arrival = useArrival();
+  const states = useCarStates();
 
   useEffect(() => {
     start.current = null;
-  }, [tick]);
+  }, [arrival]);
 
-  useFrame(({ clock }) => {
-    if (!ref.current) return;
+  useFrame(({ clock, camera, set, size }) => {
+    const g = rig.current;
+    if (!g) return;
     if (start.current === null) start.current = clock.elapsedTime;
-    const p = Math.min(1, ((clock.elapsedTime - start.current) * 1000) / ARRIVAL_MS);
-    const eased = 1 - (1 - p) ** 3;
-    ref.current.position.x = ARRIVAL_DISTANCE * (1 - eased);
-    const afterStop = (clock.elapsedTime - start.current) * 1000 - ARRIVAL_MS;
-    reveal.value = Math.min(1, Math.max(0, afterStop / REVEAL_MS));
+    const elapsed = (clock.elapsedTime - start.current) * 1000 - introDelay(arrival);
+    introActive.value = elapsed < 0;
+    if (elapsed < 0) {
+      const cam = cameras.intro;
+      if (camera !== cam) set({ camera: cam });
+      const since = elapsed + INTRO_MS;
+      let gap = INTRO_NEAR;
+      if (since < INTRO_APPROACH_MS) {
+        // 거리를 비율로 줄여 멀리서 다가오다 부드럽게 서도록 앞면 거리 계산
+        const q = easeInOut(since / INTRO_APPROACH_MS);
+        gap = INTRO_FAR * (INTRO_NEAR / INTRO_FAR) ** (q ** 1.4);
+      } else if (since > INTRO_APPROACH_MS + INTRO_HOLD_MS) {
+        // 편성 번호를 보여준 뒤 가속하며 카메라 옆을 스쳐 지나가도록 거리 계산
+        const u = (since - INTRO_APPROACH_MS - INTRO_HOLD_MS) / INTRO_DEPART_MS;
+        gap = INTRO_NEAR + (INTRO_PASS - INTRO_NEAR) * u ** 2;
+      }
+      g.position.set(INTRO_CAM.x + gap + NOSE, GROUND_Y, -CAR_WIDTH / 2);
+      g.rotation.y = 0;
+      g.scale.setScalar(1);
+      cam.fov = INTRO_CAM.fov;
+      cam.aspect = size.width / size.height;
+      // 보는 각도는 그대로 두고 정차한 정면이 화면 가운데 오도록 화면만 옆으로 이동
+      const halfWidth = Math.tan(((cam.fov / 2) * Math.PI) / 180) * cam.aspect;
+      const shift = (-INTRO_CAM.side / INTRO_NEAR / halfWidth) * (size.width / 2);
+      cam.setViewOffset(size.width, size.height, shift, 0, size.width, size.height);
+      const camZ = -CAR_WIDTH / 2 + INTRO_CAM.side;
+      cam.position.set(INTRO_CAM.x, INTRO_CAM.y, camZ);
+      cam.lookAt(INTRO_CAM.x + 1000, INTRO_CAM.y, camZ);
+      cam.updateProjectionMatrix();
+      reveal.value = 0;
+      return;
+    }
+    if (cameras.ortho && camera !== cameras.ortho) set({ camera: cameras.ortho });
+    const p = Math.min(1, elapsed / ARRIVAL_MS);
+    g.position.set(ARRIVAL_DISTANCE * (1 - easeInOut(p)), GROUND_Y, -CAR_WIDTH / 2);
+    g.rotation.y = 0;
+    g.scale.setScalar(1);
+    reveal.value = Math.min(1, Math.max(0, (elapsed - ARRIVAL_MS) / REVEAL_MS));
   });
 
-  return <group ref={ref}>{children}</group>;
+  return (
+    <group ref={rig}>
+      {/* 00호차 끝 가운데 바닥을 기준점으로 차량 배치 */}
+      <group position={[0, -GROUND_Y, CAR_WIDTH / 2]}>
+        {CARS.map((car, i) => (
+          <TrainCar
+            key={car.no}
+            {...car}
+            // 선택 차량 표시는 열차가 멈춘 뒤 적용
+            state={i === selected && revealed ? "selected" : states[i]}
+            x={i * CAR_PITCH}
+            onSelect={() => selectCar(i)}
+          />
+        ))}
+      </group>
+    </group>
+  );
+}
+
+// 열차가 멈췄는지 여부를 화면 갱신마다 확인
+function useRevealed() {
+  const [revealed, setRevealed] = useState(false);
+  useFrame(() => {
+    const now = reveal.value > 0;
+    if (now !== revealed) setRevealed(now);
+  });
+  return revealed;
 }
 
 // 열차가 멈춘 뒤 끝점 표시
@@ -273,9 +363,11 @@ function RevealGroup({ children }: { children: ReactNode }) {
 
 function Scene() {
   const { index: selected } = useSelection();
+  const revealed = useRevealed();
   return (
     <>
       <CameraRig />
+      <CabEnvironment />
       <ambientLight intensity={1.2} />
       <hemisphereLight args={["#cfe0ff", "#0a1230", 1.1]} />
       <directionalLight position={[-400, 900, 700]} intensity={2.2} />
@@ -284,17 +376,7 @@ function Scene() {
       <FloorGrid />
       <FloorGlow />
       <Rails />
-      <ArrivingTrain>
-        {CARS.map((car, i) => (
-          <TrainCar
-            key={car.no}
-            {...car}
-            state={i === selected ? "selected" : car.state}
-            x={i * CAR_PITCH}
-            onSelect={() => selectCar(i)}
-          />
-        ))}
-      </ArrivingTrain>
+      <ArrivingTrain selected={selected} revealed={revealed} />
       <Bracket />
       <RevealGroup>
         {CONNECTORS.map((c, i) => (
@@ -309,7 +391,7 @@ function Scene() {
 
 export default function ConsistStage3D() {
   return (
-    <Canvas onCreated={replayArrival} resize={{ offsetSize: true }} flat dpr={[1, 2]} gl={{ antialias: true, alpha: true }} style={{ position: "absolute", inset: 0 }}>
+    <Canvas onCreated={playIntro} resize={{ offsetSize: true }} flat dpr={[1, 2]} gl={{ antialias: true, alpha: true }} style={{ position: "absolute", inset: 0 }}>
       <Scene />
     </Canvas>
   );

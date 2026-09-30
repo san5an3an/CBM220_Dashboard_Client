@@ -3,9 +3,10 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import { ExtrudeGeometry, type Material, Mesh, MeshBasicMaterial, Shape } from "three";
-import { reveal } from "../arrival";
+import { introActive, reveal } from "../arrival";
 import type { Car } from "../data";
-import { cssColor, glowMaterial, MAT, STATE_TOKEN, stripeMaterial } from "./materials";
+import { CabFront } from "./CabFront";
+import { cssColor, glowMaterial, MAT, shadowMaterial, STATE_TOKEN, stripeMaterial } from "./materials";
 
 // 차체 치수 지정
 export const CAR_LENGTH = 130;
@@ -105,13 +106,37 @@ function FocusRing() {
   );
 }
 
+type FloorShadeProps = { shadow: Material; underGlow: Material };
+
+// 정면 연출 중에는 반사광을 끄고 진한 그림자만 표시
+function FloorShade({ shadow, underGlow }: FloorShadeProps) {
+  const shade = useRef<Mesh>(null);
+  const glow = useRef<Mesh>(null);
+  useFrame(() => {
+    const intro = introActive.value;
+    if (glow.current) glow.current.visible = !intro;
+    if (shade.current) shade.current.scale.set(intro ? 1.25 : 1, intro ? 1.6 : 1, 1);
+  });
+  return (
+    <>
+      <mesh ref={shade} position={[CAR_LENGTH / 2, GROUND_Y + 0.2, -CAR_WIDTH / 2]} rotation={[-Math.PI / 2, 0, 0]} material={shadow}>
+        <planeGeometry args={[CAR_LENGTH + 20, CAR_WIDTH + 26]} />
+      </mesh>
+      <mesh ref={glow} position={[CAR_LENGTH / 2, GROUND_Y + 0.3, -CAR_WIDTH / 2 + 8]} rotation={[-Math.PI / 2, 0, 0]} material={underGlow}>
+        <planeGeometry args={[CAR_LENGTH + 40, CAR_WIDTH + 50]} />
+      </mesh>
+    </>
+  );
+}
+
 type TrainCarProps = Car & { x: number; onSelect: () => void };
 
 export function TrainCar({ x, state, cab, pantograph, onSelect }: TrainCarProps) {
   const color = cssColor(STATE_TOKEN[state]);
-  const stripe = stripeMaterial(color);
+  // 노선 띠는 차량 상태와 관계없이 4호선 노선색으로 지정
+  const stripe = stripeMaterial(cssColor("--cyan-400"));
   const underGlow = useMemo(() => glowMaterial(color, state === "selected" ? 0.75 : 0.5), [color, state]);
-  const shadow = useMemo(() => glowMaterial("#000000", 0.9), []);
+  const shadow = useMemo(() => shadowMaterial(0.7), []);
 
   return (
     // 차량을 누르면 선택하고 올리면 손가락 커서 표시
@@ -130,12 +155,7 @@ export function TrainCar({ x, state, cab, pantograph, onSelect }: TrainCarProps)
       }}
     >
       {/* 바닥 그림자와 상태 색 반사광 표시 */}
-      <mesh position={[CAR_LENGTH / 2, GROUND_Y + 0.2, -CAR_WIDTH / 2]} rotation={[-Math.PI / 2, 0, 0]} material={shadow}>
-        <planeGeometry args={[CAR_LENGTH + 20, CAR_WIDTH + 26]} />
-      </mesh>
-      <mesh position={[CAR_LENGTH / 2, GROUND_Y + 0.3, -CAR_WIDTH / 2 + 8]} rotation={[-Math.PI / 2, 0, 0]} material={underGlow}>
-        <planeGeometry args={[CAR_LENGTH + 40, CAR_WIDTH + 50]} />
-      </mesh>
+      <FloorShade shadow={shadow} underGlow={underGlow} />
       {state === "selected" && <FocusRing />}
 
       {/* 대차와 바퀴, 하부 기기 배치 */}
@@ -178,23 +198,15 @@ export function TrainCar({ x, state, cab, pantograph, onSelect }: TrainCarProps)
         </group>
       ))}
 
-      {cab ? (
-        // 선두차 운전석 표시
-        <group position={[CAR_LENGTH + 0.2, 0, 0]}>
-          <Box size={[0.4, 16, 24]} at={[0, 15, -7]} material={MAT.windshield} />
-          <Box size={[0.4, 4.5, 16]} at={[0.1, 32, -11]} material={MAT.destSign} />
-          <mesh position={[0.55, 34.2, -19]}>
-            <boxGeometry args={[0.3, 2.4, 12]} />
-            <meshBasicMaterial color={cssColor("--accent-cyan")} />
-          </mesh>
-          <Box size={[0.4, 5, CAR_WIDTH]} at={[0, 8, 0]} material={stripe} />
-          <Box size={[2, 8, CAR_WIDTH - 2]} at={[0, -7, -1]} material={stripe} />
-          <mesh position={[0.8, 11, -4]} material={MAT.headlight}>
-            <sphereGeometry args={[1.8, 12, 12]} />
-          </mesh>
-          <mesh position={[0.8, 11, -CAR_WIDTH + 4]} material={MAT.headlight}>
-            <sphereGeometry args={[1.8, 12, 12]} />
-          </mesh>
+      {cab === "left" && (
+        // 왼쪽 끝 운전석을 좌우 반전해 표시
+        <group scale={[-1, 1, 1]}>
+          <CabFront mirrored />
+        </group>
+      )}
+      {cab === "right" ? (
+        <group position={[CAR_LENGTH, 0, 0]}>
+          <CabFront />
         </group>
       ) : (
         // 중간차 연결부 표시

@@ -71,6 +71,25 @@ body {
   }
 }
 
+/* 열차가 지나갈 때 화면을 어둡게 덮었다가 걷어내도록 지정 */
+@keyframes intro-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes intro-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes reveal {
   from {
     opacity: 0;

@@ -16,7 +16,8 @@ export function Panel({ className = "", headerClassName = "gap-4", header, child
         aria-hidden
         className="pointer-events-none absolute inset-0 rounded-[24px] bg-(image:--gradient-panel)"
       />
-      <div className={`relative flex w-full shrink-0 items-center overflow-clip ${headerClassName}`}>
+      {/* 헤더의 펼침 목록이 본문 위에 뜨도록 쌓임 순서 지정 */}
+      <div className={`relative z-10 flex w-full shrink-0 items-center ${headerClassName}`}>
         {header}
       </div>
       <div className="relative flex min-h-px w-full flex-[1_0_0] flex-col items-start overflow-clip">

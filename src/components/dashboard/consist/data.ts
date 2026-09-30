@@ -3,12 +3,13 @@ export type CarState = "normal" | "warning" | "danger" | "selected";
 export type Car = {
   no: string;
   state: CarState;
-  cab?: boolean;
+  // 운전석이 붙는 차체 끝 지정
+  cab?: "left" | "right";
   pantograph?: boolean;
 };
 
 export const CARS: Car[] = [
-  { no: "00", state: "danger" },
+  { no: "00", state: "danger", cab: "left" },
   { no: "01", state: "normal" },
   { no: "02", state: "normal", pantograph: true },
   { no: "03", state: "danger" },
@@ -17,7 +18,7 @@ export const CARS: Car[] = [
   { no: "06", state: "normal" },
   { no: "07", state: "normal", pantograph: true },
   { no: "08", state: "warning" },
-  { no: "09", state: "danger", cab: true },
+  { no: "09", state: "danger", cab: "right" },
 ];
 
 export type Telemetry = {

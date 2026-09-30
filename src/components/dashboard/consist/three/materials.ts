@@ -39,9 +39,6 @@ export const MAT = {
   gangway: std("#1a2140", { roughness: 0.7 }),
   bellows: std("#1d2448", { roughness: 0.9 }),
   pantograph: std("#c9d3e6", { metalness: 0.7, roughness: 0.3 }),
-  windshield: std("#122450", { metalness: 0.3, roughness: 0.1, emissive: new Color("#1e3563"), emissiveIntensity: 0.4 }),
-  destSign: std("#05091a"),
-  headlight: new MeshBasicMaterial({ color: "#fff7d0" }),
 };
 
 const stripeCache = new Map<string, MeshStandardMaterial>();
@@ -81,5 +78,16 @@ export function glowMaterial(color: string, opacity: number) {
     opacity,
     depthWrite: false,
     blending: AdditiveBlending,
+  });
+}
+
+// 바닥을 어둡게 덮는 부드러운 그림자 재질 생성
+export function shadowMaterial(opacity: number) {
+  return new MeshBasicMaterial({
+    map: radialTexture("#000000", 1),
+    color: "#000000",
+    transparent: true,
+    opacity,
+    depthWrite: false,
   });
 }
