@@ -38,7 +38,7 @@ export function SideRail() {
       <button
         type="button"
         aria-label="로그아웃"
-        className="relative flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-(image:--gradient-danger) shadow-[inset_0px_1px_0px_0px_var(--chart-3d-top-highlight)] drop-shadow-[0px_4px_7px_var(--status-danger-border)]"
+        className="flip-hover relative flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-(image:--gradient-danger) shadow-[inset_0px_1px_0px_0px_var(--chart-3d-top-highlight)] drop-shadow-[0px_4px_7px_var(--status-danger-border)]"
       >
         <Power className="text-(--text-on-primary)" size={20} absoluteStrokeWidth />
       </button>
@@ -52,7 +52,7 @@ function RailButton({ label, icon: Icon, active, onSelect }: RailItem) {
       type="button"
       aria-current={active ? "page" : undefined}
       onClick={onSelect}
-      className={`relative flex h-[68px] w-[76px] shrink-0 cursor-pointer flex-col items-center justify-center gap-[5px] rounded-[16px] ${
+      className={`group relative flex h-[68px] w-[76px] shrink-0 cursor-pointer flex-col items-center justify-center gap-[5px] rounded-[16px] ${
         active
           ? "border border-(--accent-cyan)/45 drop-shadow-[0px_4px_9px_var(--accent-cyan-glow)]"
           : "hover:bg-(--neutral-hover)"
@@ -61,7 +61,7 @@ function RailButton({ label, icon: Icon, active, onSelect }: RailItem) {
       {active && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-[16px]"
+          className="flip-hover pointer-events-none absolute inset-0 rounded-[16px]"
           style={{
             backgroundImage:
               "linear-gradient(138.18deg, color-mix(in srgb, var(--accent-cyan) 22%, transparent) 0%, var(--accent-violet-subtle) 100%)",

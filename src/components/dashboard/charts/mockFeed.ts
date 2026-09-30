@@ -33,7 +33,8 @@ export function initialTrend(days: number): TrendPoint[] {
   const step = (days * DAY) / (POINTS - 1);
   return Array.from({ length: POINTS }, (_, i) => {
     const avg = 9.5 + wave(i, days / 5, rand) * 1.4;
-    return { t: TODAY - days * DAY + i * step, avg, max: avg + 2.2 + wave(i, days / 3 + 1, rand) * 1.8 };
+    const max = avg + 2.2 + wave(i, days / 3 + 1, rand) * 1.8;
+    return { t: TODAY - days * DAY + i * step, avg: round1(avg), max: round1(max) };
   });
 }
 
@@ -43,7 +44,7 @@ export function nextTrend(prev: TrendPoint[]): TrendPoint[] {
   const step = prev[1].t - prev[0].t;
   const avg = clamp(last.avg + (Math.random() - 0.5) * 0.9 + (9.5 - last.avg) * 0.08, 6, 14);
   const max = clamp(Math.max(avg + 0.8, last.max + (Math.random() - 0.5) * 1.1 + (avg + 2.2 - last.max) * 0.1), avg + 0.8, 18);
-  return [...prev.slice(1), { t: last.t + step, avg, max }];
+  return [...prev.slice(1), { t: last.t + step, avg: round1(avg), max: round1(max) }];
 }
 
 export type RiskItem = { device: string; ratio: number };
@@ -67,6 +68,9 @@ export function nextRisk(): RiskItem[] {
   riskState = riskState.map((r) => ({ ...r, ratio: Math.round(clamp(r.ratio + (Math.random() - 0.5) * 5, 8, 39)) }));
   return [...riskState].sort((a, b) => b.ratio - a.ratio).slice(0, 5);
 }
+
+// 말풍선에 보일 값을 소수 첫째 자리로 반올림
+const round1 = (v: number) => Math.round(v * 10) / 10;
 
 function clamp(v: number, min: number, max: number) {
   return Math.min(max, Math.max(min, v));

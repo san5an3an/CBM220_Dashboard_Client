@@ -39,7 +39,7 @@ function Toolbar() {
       </button>
       <button
         type="button"
-        className="relative flex h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] pl-3.5 pr-4 shadow-[inset_0px_1px_0px_0px_var(--chart-3d-top-highlight)] drop-shadow-[0px_4px_7px_color-mix(in_srgb,var(--blue-500)_40%,transparent)]"
+        className="flip-hover relative flex h-10 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[12px] pl-3.5 pr-4 shadow-[inset_0px_1px_0px_0px_var(--chart-3d-top-highlight)] drop-shadow-[0px_4px_7px_color-mix(in_srgb,var(--blue-500)_40%,transparent)]"
         style={{ backgroundImage: "var(--gradient-primary)" }}
       >
         <Search className="text-(--text-on-primary)" size={18} absoluteStrokeWidth />

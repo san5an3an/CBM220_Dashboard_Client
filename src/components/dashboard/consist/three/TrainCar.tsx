@@ -3,6 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import { ExtrudeGeometry, type Material, Mesh, MeshBasicMaterial, Shape } from "three";
+import { reveal } from "../arrival";
 import type { Car } from "../data";
 import { cssColor, glowMaterial, MAT, STATE_TOKEN, stripeMaterial } from "./materials";
 
@@ -87,30 +88,47 @@ function FocusRing() {
   useFrame(({ clock }) => {
     const m = ref.current;
     if (!m) return;
+    // 열차가 멈춘 뒤 링을 키우며 표시하고 이후 숨 쉬듯 반복
     const t = (Math.sin(clock.elapsedTime * 2.4) + 1) / 2;
-    (m.material as MeshBasicMaterial).opacity = 0.55 + t * 0.4;
-    m.scale.setScalar(1 + t * 0.04);
+    const shown = reveal.value;
+    m.visible = shown > 0;
+    (m.material as MeshBasicMaterial).opacity = (0.55 + t * 0.4) * shown;
+    m.scale.setScalar((0.85 + 0.15 * shown) * (1 + t * 0.04));
   });
   return (
     <group position={[CAR_LENGTH / 2, GROUND_Y + 0.5, -CAR_WIDTH / 2]} scale={[92, 1, 36]}>
       <mesh ref={ref} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[1, 1.035, 96]} />
-        <meshBasicMaterial color={cssColor("--accent-cyan")} transparent opacity={0.8} depthWrite={false} />
+        <meshBasicMaterial color={cssColor("--accent-cyan")} transparent opacity={0} depthWrite={false} />
       </mesh>
     </group>
   );
 }
 
-type TrainCarProps = Car & { x: number };
+type TrainCarProps = Car & { x: number; onSelect: () => void };
 
-export function TrainCar({ x, state, cab, pantograph }: TrainCarProps) {
+export function TrainCar({ x, state, cab, pantograph, onSelect }: TrainCarProps) {
   const color = cssColor(STATE_TOKEN[state]);
   const stripe = stripeMaterial(color);
   const underGlow = useMemo(() => glowMaterial(color, state === "selected" ? 0.75 : 0.5), [color, state]);
   const shadow = useMemo(() => glowMaterial("#000000", 0.9), []);
 
   return (
-    <group position={[x, 0, 0]}>
+    // 차량을 누르면 선택하고 올리면 손가락 커서 표시
+    <group
+      position={[x, 0, 0]}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect();
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        document.body.style.cursor = "pointer";
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = "";
+      }}
+    >
       {/* 바닥 그림자와 상태 색 반사광 표시 */}
       <mesh position={[CAR_LENGTH / 2, GROUND_Y + 0.2, -CAR_WIDTH / 2]} rotation={[-Math.PI / 2, 0, 0]} material={shadow}>
         <planeGeometry args={[CAR_LENGTH + 20, CAR_WIDTH + 26]} />

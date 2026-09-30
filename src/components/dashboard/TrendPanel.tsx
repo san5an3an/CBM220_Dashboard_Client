@@ -1,16 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { Area, AreaChart, ResponsiveContainer, YAxis } from "recharts";
+import { Area, AreaChart, YAxis } from "recharts";
+import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Panel, PanelTitle, Spacer } from "@/components/ui/Panel";
 import { SegmentTabs } from "@/components/ui/SegmentTabs";
 import { formatDay, initialTrend, nextTrend, TREND_RANGES } from "./charts/mockFeed";
 import { useInterval } from "./charts/useInterval";
 
-const SERIES = [
-  { key: "avg", label: "평균 이상비율", color: "var(--chart-series-1)" },
-  { key: "max", label: "최대 이상비율", color: "var(--chart-series-3)" },
-] as const;
+// 계열 이름과 색 토큰 지정
+const CHART_CONFIG = {
+  avg: { label: "평균 이상비율", color: "var(--chart-series-1)" },
+  max: { label: "최대 이상비율", color: "var(--chart-series-3)" },
+} satisfies ChartConfig;
+
+const SERIES = (Object.keys(CHART_CONFIG) as (keyof typeof CHART_CONFIG)[]).map((key) => ({
+  key,
+  label: CHART_CONFIG[key].label,
+  color: `var(--color-${key})`,
+}));
 
 const GRID = [
   "inset-[0_0_99.62%_0] bg-(--chart-grid)",
@@ -51,7 +59,7 @@ export function TrendPanel() {
               <div key={s.key} className="relative flex shrink-0 items-center gap-2">
                 <div
                   className="size-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: s.color, boxShadow: `0 0 6px 1px ${s.color}` }}
+                  style={{ backgroundColor: CHART_CONFIG[s.key].color, boxShadow: `0 0 6px 1px ${CHART_CONFIG[s.key].color}` }}
                 />
                 <p className="whitespace-nowrap text-[12px] font-medium leading-4 tracking-[0.5px] text-(--text-secondary)">
                   {s.label}
@@ -67,7 +75,7 @@ export function TrendPanel() {
           <div key={cls} className={`absolute ${cls}`} />
         ))}
         <div className="absolute inset-[0_0_24px_0]">
-          <ResponsiveContainer width="100%" height="100%">
+          <ChartContainer config={CHART_CONFIG} className="aspect-auto size-full">
             <AreaChart key={range} data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
               <defs>
                 {SERIES.map((s) => (
@@ -78,6 +86,10 @@ export function TrendPanel() {
                 ))}
               </defs>
               <YAxis hide domain={[4, 18]} />
+              <ChartTooltip
+                cursor={{ stroke: "var(--chart-axis)" }}
+                content={<ChartTooltipContent labelFormatter={(_, payload) => formatDay(payload[0]?.payload.t)} />}
+              />
               {SERIES.map((s) => (
                 <Area
                   key={s.key}
@@ -93,7 +105,7 @@ export function TrendPanel() {
                 />
               ))}
             </AreaChart>
-          </ResponsiveContainer>
+          </ChartContainer>
         </div>
         <div className="absolute inset-x-0 bottom-0 flex h-4 items-start justify-between overflow-clip whitespace-nowrap text-[11px] font-medium leading-4 tracking-[0.5px]">
           {ticks.map((d) => (

@@ -1,5 +1,10 @@
 import { FleetOverview } from "@/components/dashboard/FleetOverview";
+import { FitViewport } from "@/components/layout/FitViewport";
 
 export default function Home() {
-  return <FleetOverview />;
+  return (
+    <FitViewport>
+      <FleetOverview />
+    </FitViewport>
+  );
 }

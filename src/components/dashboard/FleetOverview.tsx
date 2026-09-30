@@ -10,7 +10,7 @@ export function FleetOverview() {
   return (
     // 1920×1080 기준 고정 크기로 두고 큰 화면에서는 패널을 늘려 공간 채움
     <div
-      className="relative flex h-dvh min-h-[1080px] w-full min-w-[1920px] items-start overflow-hidden"
+      className="relative flex size-full items-start overflow-hidden"
       style={{ backgroundImage: "var(--gradient-page)" }}
     >
       <div className="absolute left-[300px] top-[-320px] h-[620px] w-[1000px]">

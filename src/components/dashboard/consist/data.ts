@@ -11,7 +11,7 @@ export const CARS: Car[] = [
   { no: "00", state: "danger" },
   { no: "01", state: "normal" },
   { no: "02", state: "normal", pantograph: true },
-  { no: "03", state: "selected" },
+  { no: "03", state: "danger" },
   { no: "04", state: "normal" },
   { no: "05", state: "danger", pantograph: true },
   { no: "06", state: "normal" },
@@ -92,19 +92,3 @@ export const CONNECTORS: { color: string; points: [number, number][] }[] = [
   { color: "--slate-400", points: [[1302.2, 136], [1302.2, 407]] },
   { color: "--status-danger", points: [[1594, 138], [1594, 152], [1568.1, 472.5]] },
 ];
-
-// 선택 차량 정보 카드에서 차량까지 리더선 좌표 지정
-export const LEADER: [number, number][] = [[263, 508], [263, 392], [655, 362]];
-// 리더선이 닿는 차량 하부 위치 지정
-export const SELECTED_ANCHOR: [number, number, number] = [479, -15.3, 0];
-
-export type HealthLevel = "ok" | "warn";
-
-export const SELECTED_CAR = {
-  title: "03호차",
-  device: "MICOM",
-  status: "위험",
-  ratio: "34%",
-  window: "65/190",
-  health: ["ok", "ok", "warn", "ok", "ok"] as HealthLevel[],
-};

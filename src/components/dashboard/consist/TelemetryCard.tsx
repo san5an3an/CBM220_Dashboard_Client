@@ -1,10 +1,21 @@
+"use client";
+
+import { ARRIVAL_MS, COUNT_MS, REVEAL_MS, useArrivalTick } from "./arrival";
 import type { Telemetry } from "./data";
+import { useCountUp } from "./useCountUp";
+
+// 디자인 게이지 길이 지정
+const GAUGE_W = 120;
 
 // 카드 색 토큰에 투명도 적용
 const tint = (v: string, pct: number) => `color-mix(in srgb, var(${v}) ${pct}%, transparent)`;
 
 export function TelemetryCard({ label, value, unit, tag, range, color, left }: Telemetry) {
   const c = `var(${color})`;
+  const tick = useArrivalTick();
+  // 카드가 나타난 뒤 숫자와 게이지 채우기 시작
+  const startAt = ARRIVAL_MS + REVEAL_MS;
+  const { shown, progress } = useCountUp(value, tick, COUNT_MS, startAt);
   return (
     <div
       className={`absolute top-0 flex w-[236px] flex-col items-start gap-1.5 overflow-clip rounded-[16px] border px-4 py-3.5 ${left}`}
@@ -29,12 +40,16 @@ export function TelemetryCard({ label, value, unit, tag, range, color, left }: T
         )}
       </div>
       <div className="relative flex shrink-0 items-baseline gap-1 overflow-clip whitespace-nowrap">
-        <p className="text-[36px] font-extrabold leading-[44px] text-(--text-primary)">{value}</p>
+        <p className="text-[36px] font-extrabold leading-[44px] text-(--text-primary) tabular-nums">{shown}</p>
         {unit && <p className="text-[14px] font-medium leading-5 tracking-[0.1px] text-(--text-secondary)">{unit}</p>}
       </div>
       <div className="pointer-events-none relative h-2 w-full shrink-0 overflow-clip rounded-[4px]">
         <div aria-hidden className="absolute inset-0 rounded-[4px] bg-(--neutral-track)" />
-        <div className="absolute left-0 top-0 h-2 w-[120px] rounded-[4px]" style={{ boxShadow: `0px 0px 8px 0px ${tint(color, 80)}` }}>
+        {/* 숫자와 같은 진행률로 게이지 채움 */}
+        <div
+          className="absolute left-0 top-0 h-2 rounded-[4px]"
+          style={{ width: GAUGE_W * progress, boxShadow: `0px 0px 8px 0px ${tint(color, 80)}` }}
+        >
           <div
             aria-hidden
             className="absolute inset-0 rounded-[4px]"

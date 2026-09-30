@@ -37,7 +37,7 @@ export function PageNav() {
           <p className={VALUE}>09:54</p>
           <button
             type="button"
-            className="relative flex shrink-0 cursor-pointer items-center overflow-clip rounded-full px-3.5 py-1.5 shadow-[0px_3px_12px_0px_var(--accent-cyan-glow)]"
+            className="flip-hover relative flex shrink-0 cursor-pointer items-center overflow-clip rounded-full px-3.5 py-1.5 shadow-[0px_3px_12px_0px_var(--accent-cyan-glow)]"
             style={{
               backgroundImage: "linear-gradient(149.35deg, var(--accent-cyan) 0%, var(--accent-violet) 100%)",
             }}

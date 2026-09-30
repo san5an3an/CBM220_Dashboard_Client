@@ -1,12 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, XAxis, YAxis } from "recharts";
+import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Panel, PanelTitle, Spacer } from "@/components/ui/Panel";
 import { initialRisk, nextRisk, type RiskItem } from "./charts/mockFeed";
 import { useInterval } from "./charts/useInterval";
 
 const LIVE_MS = 3000;
+
+// 막대 계열 이름과 색 토큰 지정
+const CHART_CONFIG = {
+  ratio: { label: "이상비율", color: "var(--chart-series-1)" },
+} satisfies ChartConfig;
 // 34% 막대가 트랙의 약 85%가 되도록 축 최대값 지정
 const AXIS_MAX = 40;
 // 순위 배지와 장치명 영역 너비 지정
@@ -62,6 +68,16 @@ function Track({ x = 0, y = 0, width = 0, height = 0 }: ShapeProps) {
   );
 }
 
+// 말풍선에 장치명과 이상비율 표시
+function TooltipRow({ value, device }: { value: unknown; device: string }) {
+  return (
+    <div className="flex w-full items-center justify-between gap-4">
+      <span className="text-(--text-secondary)">{device}</span>
+      <span className="font-semibold text-(--text-primary) tabular-nums">{String(value)}%</span>
+    </div>
+  );
+}
+
 export function RiskRankingPanel() {
   const [data, setData] = useState<RiskItem[]>(initialRisk);
 
@@ -81,12 +97,12 @@ export function RiskRankingPanel() {
       }
     >
       <div className="relative h-[124px] w-full shrink-0">
-        <ResponsiveContainer width="100%" height="100%">
+        <ChartContainer config={CHART_CONFIG} className="aspect-auto size-full">
           <BarChart data={data} layout="vertical" margin={{ top: 0, right: 0, bottom: 0, left: 0 }} barCategoryGap={6}>
             <defs>
               <linearGradient id="risk-fill" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" style={{ stopColor: "var(--blue-500)" }} />
-                <stop offset="100%" style={{ stopColor: "var(--chart-series-1)" }} />
+                <stop offset="100%" style={{ stopColor: "var(--color-ratio)" }} />
               </linearGradient>
               <linearGradient id="risk-inset" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" style={{ stopColor: "var(--effect-shadow-panel)" }} />
@@ -109,9 +125,13 @@ export function RiskRankingPanel() {
               tickLine={false}
               tick={<RatioTick data={data} />}
             />
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent labelKey="device" formatter={(value, _name, item) => <TooltipRow value={value} device={item.payload.device} />} />}
+            />
             <Bar yAxisId="device" dataKey="ratio" barSize={14} shape={<Bar3D />} background={<Track />} animationDuration={800} />
           </BarChart>
-        </ResponsiveContainer>
+        </ChartContainer>
       </div>
     </Panel>
   );
