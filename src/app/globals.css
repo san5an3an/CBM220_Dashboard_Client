@@ -540,3 +540,16 @@ body {
     translate: 0 -0.6px;
   }
 }
+
+/* 다음 단계 화살표가 오른쪽으로 살짝 밀렸다 돌아오며 빛나도록 지정 */
+@keyframes chevron-flow {
+  0%,
+  100% {
+    translate: 0 0;
+    opacity: 0.75;
+  }
+  50% {
+    translate: 3px 0;
+    opacity: 1;
+  }
+}
