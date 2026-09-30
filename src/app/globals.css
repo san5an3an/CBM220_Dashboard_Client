@@ -158,6 +158,141 @@ body {
   }
 }
 
+/* 경고 아이콘이 천천히 깜빡이도록 지정 */
+@keyframes alert-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* 레일 펼침 창이 왼쪽에서 살짝 밀려 나오도록 지정 */
+@keyframes flyout-in {
+  from {
+    opacity: 0;
+    translate: -6px 0;
+  }
+}
+
+/* 세션 만료가 가까우면 테두리가 호박색으로 빛나도록 지정 */
+@keyframes warn-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-warning) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 12px 0 color-mix(in srgb, var(--status-warning) 45%, transparent);
+  }
+}
+
+/* 새 알림 카드가 오른쪽에서 밀려 들어오도록 지정 */
+@keyframes feed-in {
+  from {
+    opacity: 0;
+    translate: 16px 0;
+  }
+}
+
+/* 알림이 오른쪽에서 튀어 들어오도록 지정 */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    translate: 40px 0;
+    scale: 0.96;
+  }
+}
+
+/* 알림이 오른쪽으로 사라지도록 지정 */
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    translate: 40px 0;
+  }
+}
+
+/* 알림이 닫히기까지 남은 시간 막대가 줄어들도록 지정 */
+@keyframes toast-timer {
+  from {
+    scale: 1 1;
+  }
+  to {
+    scale: 0 1;
+  }
+}
+
+/* 어두운 배경이 서서히 나타나도록 지정 */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* 어두운 배경이 서서히 사라지도록 지정 */
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* 다이얼로그가 살짝 커지며 떠오르도록 지정 */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+    translate: 0 12px;
+  }
+}
+
+/* 다이얼로그가 작아지며 사라지도록 지정 */
+@keyframes dialog-out {
+  to {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+/* 모달 시트가 오른쪽에서 밀려 들어오도록 지정 */
+@keyframes sheet-in {
+  from {
+    translate: 100% 0;
+  }
+}
+
+/* 모달 시트가 오른쪽으로 빠져나가도록 지정 */
+@keyframes sheet-out {
+  to {
+    translate: 100% 0;
+  }
+}
+
+/* 엠블럼 빛줄기가 가볍게 깜빡이도록 지정 */
+@keyframes beam-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 0.55;
+  }
+  55% {
+    opacity: 0.9;
+  }
+}
+
+/* 엠블럼 아이콘 원이 위아래로 떠 있도록 지정 */
+@keyframes holo-pulse {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -3px;
+  }
+}
+
 @keyframes reveal {
   from {
     opacity: 0;
