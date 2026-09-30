@@ -3,11 +3,12 @@
 import { useFrame } from "@react-three/fiber";
 import { type CSSProperties, type ReactNode, useRef } from "react";
 import type { Group } from "three";
+import type { CarState } from "@/components/dashboard/consist/data";
+import { STATE_TOKEN } from "@/components/dashboard/consist/three/materials";
 import { TrainCar } from "@/components/dashboard/consist/three/TrainCar";
 import { tint } from "@/lib/tone";
 import { TEXT } from "@/lib/typography";
 import { ConsistView } from "./ConsistView";
-import { CAR_STATE, type CarState } from "./tone";
 
 // Figma 차량 틀 치수와 앞면 왼쪽 아래 기준점 지정
 const W = 160;
@@ -18,12 +19,11 @@ const SLIDE = 60;
 
 type IsoCarProps = {
   number?: string;
+  // 대시보드와 같은 정상·경고·위험·선택 상태 지정
   state?: CarState;
   // 선두차는 운전석 앞머리, 중간차는 연결막 표시
   type?: "middle" | "cab";
   pantograph?: boolean;
-  // 옆면 띠를 상태 색 대신 4호선 노선색으로 지정
-  lineStripe?: boolean;
   onSelect?: () => void;
 };
 
@@ -45,7 +45,7 @@ type CarPlateTagProps = { number: string; state: CarState; className?: string; s
 
 // 호차 번호판을 상태 색 테두리로 표시하고 누르면 해당 차량 선택
 function CarPlateTag({ number, state, className = "", style, onClick }: CarPlateTagProps) {
-  const token = CAR_STATE[state];
+  const token = STATE_TOKEN[state];
   const selected = state === "selected";
   return (
     <button
@@ -69,10 +69,8 @@ function CarPlateTag({ number, state, className = "", style, onClick }: CarPlate
   );
 }
 
-// 아이소메트릭 전동차 1량을 상태 색 띠·반사광·번호판과 함께 3D 로 표시
-export function IsoCar({ number = "00", state = "normal", type = "middle", pantograph = false, lineStripe = false, onSelect }: IsoCarProps) {
-  const token = CAR_STATE[state];
-  const selected = state === "selected";
+// 대시보드 편성 차량과 같은 전동차 1량을 4호선 띠·상태 색 반사광·번호판과 함께 3D 로 표시
+export function IsoCar({ number = "00", state = "normal", type = "middle", pantograph = false, onSelect }: IsoCarProps) {
   return (
     <div className="relative shrink-0" style={{ width: W, height: H }}>
       <ConsistView width={W} height={H} origin={ORIGIN} pad={24}>
@@ -80,9 +78,7 @@ export function IsoCar({ number = "00", state = "normal", type = "middle", panto
           <TrainCar
             no={number}
             x={0}
-            state={selected ? "selected" : "normal"}
-            tone={token}
-            stripeToken={lineStripe ? "--cyan-400" : token}
+            state={state}
             ringAlways
             cab={type === "cab" ? "right" : undefined}
             pantograph={pantograph}

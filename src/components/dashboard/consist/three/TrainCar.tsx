@@ -132,18 +132,14 @@ function FloorShade({ shadow, underGlow }: FloorShadeProps) {
 type TrainCarProps = Car & {
   x: number;
   onSelect: () => void;
-  // 바닥 반사광 색 토큰을 상태 색 대신 지정
-  tone?: string;
-  // 옆면 띠 색 토큰 지정
-  stripeToken?: string;
   // 선택 링을 도착 연출과 관계없이 표시
   ringAlways?: boolean;
 };
 
-export function TrainCar({ x, state, cab, pantograph, onSelect, tone, stripeToken = "--cyan-400", ringAlways = false }: TrainCarProps) {
-  const color = cssColor(tone ?? STATE_TOKEN[state]);
-  // 노선 띠는 따로 지정하지 않으면 4호선 노선색으로 지정
-  const stripe = stripeMaterial(cssColor(stripeToken));
+export function TrainCar({ x, state, cab, pantograph, onSelect, ringAlways = false }: TrainCarProps) {
+  const color = cssColor(STATE_TOKEN[state]);
+  // 노선 띠는 차량 상태와 관계없이 4호선 노선색으로 지정
+  const stripe = stripeMaterial(cssColor("--cyan-400"));
   const underGlow = useMemo(() => glowMaterial(color, state === "selected" ? 0.75 : 0.5), [color, state]);
   const shadow = useMemo(() => shadowMaterial(0.7), []);
 
