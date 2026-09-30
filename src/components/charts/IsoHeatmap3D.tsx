@@ -96,7 +96,7 @@ export function IsoHeatmap3D({ formations = ["401", "402", "403", "404", "405", 
             height={isoHeight(v * PX_PER)}
             shade={SHADE}
             position={cellBase(f, c)}
-            onHover={(over) => setHover(over ? [f, c] : null)}
+            onHover={(over) => setHover((h) => (over ? [f, c] : h && h[0] === f && h[1] === c ? null : h))}
             onSettled={top2.some((t) => t.f === f && t.c === c) ? () => setSettled((n) => n + 1) : undefined}
           />
         ))}

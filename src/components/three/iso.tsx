@@ -123,7 +123,15 @@ export function IsoPrism({ token, side, height, position, shade, outline = false
         geometry={geo}
         position={[position[0], position[1], position[2]]}
         onClick={onClick}
-        onPointerOver={onHover ? () => onHover(true) : undefined}
+        onPointerOver={
+          onHover
+            ? (e) => {
+                // 겹쳐 보이는 뒤쪽 기둥까지 이벤트가 전달되지 않도록 가장 앞 기둥에서 멈추기 처리
+                e.stopPropagation();
+                onHover(true);
+              }
+            : undefined
+        }
         onPointerOut={onHover ? () => onHover(false) : undefined}
       >
         <meshBasicMaterial vertexColors transparent depthWrite={false} />
