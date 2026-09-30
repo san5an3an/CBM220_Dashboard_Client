@@ -7,20 +7,21 @@ import { cssColor } from "@/components/dashboard/consist/three/materials";
 import { ObliqueView } from "@/components/three/ObliqueView";
 import { STATUS, type Status, tint } from "@/lib/tone";
 
-// Figma 기둥 치수 지정 (정면 폭 22, 깊이 10, 최대 높이 110)
+// 정면 폭 22·깊이 10·기본 틀 높이 120 의 Figma 기둥 치수 지정
 const FRONT = 22;
 const DEPTH = 10;
-const MAX_H = 110;
 const VIEW_W = 32;
-const VIEW_H = 120;
 
 type IsoPillarProps = {
   status: Status;
   // 기둥 높이 비율(0~1) 지정
   value?: number;
+  // 기둥 틀 높이(px) 지정
+  height?: number;
 };
 
-function Pillar({ status, value }: Required<IsoPillarProps>) {
+function Pillar({ status, value, height: viewH }: Required<IsoPillarProps>) {
+  const MAX_H = viewH - DEPTH;
   const body = useRef<Group>(null);
   const shine = useRef<MeshStandardMaterial>(null);
   const height = useRef(0);
@@ -37,7 +38,7 @@ function Pillar({ status, value }: Required<IsoPillarProps>) {
   });
 
   return (
-    <group position={[0, -VIEW_H, 0]}>
+    <group position={[0, -viewH, 0]}>
       <group ref={body} scale={[1, 0, 1]}>
         <mesh position={[FRONT / 2, MAX_H / 2, -DEPTH / 2]}>
           <boxGeometry args={[FRONT, MAX_H, DEPTH]} />
@@ -58,17 +59,17 @@ function Pillar({ status, value }: Required<IsoPillarProps>) {
 }
 
 // 운행 상태별 색의 등각 3D 기둥을 목표 높이까지 자라게 표시
-export function IsoPillar({ status, value = 1 }: IsoPillarProps) {
+export function IsoPillar({ status, value = 1, height = 120 }: IsoPillarProps) {
   return (
-    <div className="relative shrink-0" style={{ width: VIEW_W, height: VIEW_H }}>
+    <div className="relative shrink-0" style={{ width: VIEW_W, height }}>
       {/* 기둥 아래로 번지는 상태 색 그림자 표시 */}
       <div
         aria-hidden
         className="absolute right-0 bottom-0 left-0 rounded-full blur-[11px]"
         style={{ height: "60%", translate: "0 10px", background: tint(STATUS[status], 35) }}
       />
-      <ObliqueView width={VIEW_W} height={VIEW_H} className="absolute! inset-0">
-        <Pillar status={status} value={value} />
+      <ObliqueView width={VIEW_W} height={height} className="absolute! inset-0">
+        <Pillar status={status} value={value} height={height} />
       </ObliqueView>
     </div>
   );

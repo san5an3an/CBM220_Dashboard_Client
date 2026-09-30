@@ -488,3 +488,55 @@ body {
 .group:hover > .flip-hover::after {
   opacity: 1;
 }
+
+/* 상행 열차가 오른쪽에서 역으로 미끄러져 서도록 지정 */
+@keyframes dock-left {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
+/* 하행 열차가 왼쪽에서 역으로 미끄러져 서도록 지정 */
+@keyframes dock-right {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+}
+
+/* 선택한 장치 구슬에서 물결이 퍼져 나가며 사라지도록 지정 */
+@keyframes hotspot-ping {
+  from {
+    opacity: 1;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 1.7;
+  }
+}
+
+/* 장치 구슬 둘레 빛이 천천히 커졌다 작아지도록 지정 */
+@keyframes hotspot-breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+    scale: 0.9;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.08;
+  }
+}
+
+/* 차체가 대차 위에서 살짝 오르내리도록 지정 */
+@keyframes car-sway {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -0.6px;
+  }
+}
