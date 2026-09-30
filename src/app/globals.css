@@ -90,6 +90,57 @@ body {
   }
 }
 
+/* 살아 있는 상태 점이 숨 쉬듯 빛나도록 지정 */
+@keyframes legend-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 4px var(--pulse);
+  }
+  50% {
+    box-shadow: 0 0 10px 2px var(--pulse);
+  }
+}
+
+/* 오류 문구가 나타날 때 좌우로 짧게 흔들리도록 지정 */
+@keyframes shake {
+  0%,
+  100% {
+    translate: 0;
+  }
+  25% {
+    translate: -3px;
+  }
+  60% {
+    translate: 2px;
+  }
+}
+
+/* 새 로그 줄이 아래에서 밀려 올라오며 나타나도록 지정 */
+@keyframes log-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+/* 강조선이 왼쪽부터 늘어나며 나타나도록 지정 */
+@keyframes grow-x {
+  from {
+    scale: 0 1;
+  }
+}
+
+/* 진행 중인 칩 테두리가 천천히 빛났다 흐려지도록 지정 */
+@keyframes border-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-cyan) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 12px 0 color-mix(in srgb, var(--accent-cyan) 45%, transparent);
+  }
+}
+
 @keyframes reveal {
   from {
     opacity: 0;
