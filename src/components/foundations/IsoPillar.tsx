@@ -1,10 +1,7 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
-import { Color, type Group, type MeshStandardMaterial } from "three";
-import { cssColor } from "@/components/dashboard/consist/three/materials";
-import { ObliqueView } from "@/components/three/ObliqueView";
+import { useEffect, useRef } from "react";
+import { LAYER, subscribe } from "@/components/three/iso";
 import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { STATUS, STATUS_NAME, type Status, tint } from "@/lib/tone";
 
@@ -23,45 +20,65 @@ type IsoPillarProps = {
   tip?: boolean;
 };
 
+// 기존 3D 조명 결과를 상태 5색으로 재서 맞춘 면별 밝기 배수(선형 색 공간) 지정
+const LIT = {
+  front: (c: string) => `color(from ${c} srgb-linear calc(r * 1.0483 + 0.0012) calc(g * 1.0483 + 0.0012) calc(b * 1.0483 + 0.0012))`,
+  top: (c: string) => `color(from ${c} srgb-linear calc(r * 0.7454 + 0.6107) calc(g * 0.7454 + 0.6107) calc(b * 0.7454 + 0.6107))`,
+  side: (c: string) => `color(from ${c} srgb-linear calc(r * 0.3092 + 0.0006) calc(g * 0.3092 + 0.0006) calc(b * 0.3092 + 0.0006))`,
+};
+// 조명을 받은 흰 광택 띠 색 지정
+const SHINE = "color(srgb-linear 0.7995 0.7995 0.7995)";
+// 상태가 바뀔 때 버튼 반전과 같은 0.3초 동안 색이 넘어가도록 지정
+const FADE = { transition: "fill 300ms ease" };
+
+// 목표 높이까지 부드럽게 자라고 앞면 광택 띠가 천천히 오르내리는 기둥을 SVG 면으로 표시
 function Pillar({ status, value, height: viewH }: Required<Omit<IsoPillarProps, "tip">>) {
   const MAX_H = viewH - DEPTH;
-  const body = useRef<Group>(null);
-  const shine = useRef<MeshStandardMaterial>(null);
-  const height = useRef(0);
-  const base = useMemo(() => new Color(cssColor(STATUS[status])), [status]);
-  const top = useMemo(() => base.clone().lerp(new Color("#ffffff"), 0.45), [base]);
-  const side = useMemo(() => base.clone().multiplyScalar(0.55), [base]);
-
-  useFrame(({ clock }, delta) => {
-    // 목표 높이까지 부드럽게 자라고 표면 광택이 천천히 오르내리도록 갱신
-    const target = Math.max(0.02, Math.min(1, value)) * MAX_H;
-    height.current += (target - height.current) * (1 - Math.exp(-delta * 4));
-    if (body.current) body.current.scale.y = height.current / MAX_H;
-    if (shine.current) shine.current.opacity = 0.25 + 0.2 * (Math.sin(clock.elapsedTime * 1.6) + 1) * 0.5;
+  const front = useRef<SVGRectElement>(null);
+  const top = useRef<SVGPolygonElement>(null);
+  const side = useRef<SVGPolygonElement>(null);
+  const shine = useRef<SVGRectElement>(null);
+  const shown = useRef(0);
+  const live = useRef({ value, MAX_H });
+  useEffect(() => {
+    live.current = { value, MAX_H };
   });
 
+  useEffect(
+    () =>
+      subscribe((t, dt) => {
+        const { value: v, MAX_H: max } = live.current;
+        // 목표 높이까지 부드럽게 자라고 표면 광택이 천천히 오르내리도록 계산
+        const target = Math.max(0.02, Math.min(1, v)) * max;
+        shown.current += (target - shown.current) * (1 - Math.exp(-dt * 4));
+        const h = shown.current;
+        const y = viewH - h;
+        front.current?.setAttribute("y", `${y}`);
+        front.current?.setAttribute("height", `${h}`);
+        top.current?.setAttribute("points", `0,${y} ${FRONT},${y} ${VIEW_W},${y - DEPTH} ${DEPTH},${y - DEPTH}`);
+        side.current?.setAttribute("points", `${FRONT},${y} ${VIEW_W},${y - DEPTH} ${VIEW_W},${viewH - DEPTH} ${FRONT},${viewH}`);
+        const s = h / max;
+        if (shine.current) {
+          shine.current.setAttribute("y", `${viewH - (max - 3) * s + 0.1}`);
+          shine.current.setAttribute("height", `${Math.max(0, (max - 6) * s)}`);
+          shine.current.setAttribute("fill-opacity", `${0.25 + 0.2 * (Math.sin(t * 1.6) + 1) * 0.5}`);
+        }
+      }),
+    [viewH],
+  );
+
+  const tone = `var(${STATUS[status]})`;
   return (
-    <group position={[0, -viewH, 0]}>
-      <group ref={body} scale={[1, 0, 1]}>
-        <mesh position={[FRONT / 2, MAX_H / 2, -DEPTH / 2]}>
-          <boxGeometry args={[FRONT, MAX_H, DEPTH]} />
-          <meshStandardMaterial attach="material-0" color={side} roughness={0.5} />
-          <meshStandardMaterial attach="material-1" color={side} roughness={0.5} />
-          <meshStandardMaterial attach="material-2" color={top} emissive={top} emissiveIntensity={0.35} roughness={0.4} />
-          <meshStandardMaterial attach="material-3" color={side} roughness={0.5} />
-          <meshStandardMaterial attach="material-4" color={base} emissive={base} emissiveIntensity={0.25} roughness={0.35} />
-          <meshStandardMaterial attach="material-5" color={side} roughness={0.5} />
-        </mesh>
-        <mesh position={[4.5, MAX_H / 2, 0.1]}>
-          <planeGeometry args={[3, MAX_H - 6]} />
-          <meshStandardMaterial ref={shine} color="#ffffff" transparent opacity={0.35} depthWrite={false} />
-        </mesh>
-      </group>
-    </group>
+    <svg className="pointer-events-none absolute inset-0" style={{ zIndex: LAYER }} width={VIEW_W} height={viewH} viewBox={`0 0 ${VIEW_W} ${viewH}`}>
+      <polygon ref={side} style={{ ...FADE, fill: LIT.side(tone) }} />
+      <polygon ref={top} style={{ ...FADE, fill: LIT.top(tone) }} />
+      <rect ref={front} x={0} width={FRONT} style={{ ...FADE, fill: LIT.front(tone) }} />
+      <rect ref={shine} x={2.9} width={3} fill={SHINE} />
+    </svg>
   );
 }
 
-// 운행 상태별 색의 등각 3D 기둥을 목표 높이까지 자라게 표시
+// 운행 상태별 색의 입체 기둥을 목표 높이까지 자라게 표시
 export function IsoPillar({ status, value = 1, height = 120, tip: withTip = true }: IsoPillarProps) {
   const { tip, track, show, hide } = useValueTip<true>();
   return (
@@ -78,9 +95,7 @@ export function IsoPillar({ status, value = 1, height = 120, tip: withTip = true
         className="absolute right-0 bottom-0 left-0 rounded-full blur-[11px]"
         style={{ height: "60%", translate: "0 10px", background: tint(STATUS[status], 35) }}
       />
-      <ObliqueView width={VIEW_W} height={height} className="absolute! inset-0">
-        <Pillar status={status} value={value} height={height} />
-      </ObliqueView>
+      <Pillar status={status} value={value} height={height} />
       <ValueTip at={tip} label={STATUS_NAME[status]} rows={[{ name: "비율", value: Math.round(Math.max(0, Math.min(1, value)) * 100), unit: "%", color: `var(${STATUS[status]})` }]} />
     </div>
   );
