@@ -1,16 +1,18 @@
 "use client";
 
-import { Line } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
-import { type ReactNode, useMemo, useRef } from "react";
-import { BoxGeometry, BufferAttribute, Color, type Mesh } from "three";
-import { cssColor } from "@/components/dashboard/consist/three/materials";
-import { TiltView } from "./TiltView";
+import { Children, createContext, isValidElement, type ReactElement, type ReactNode, useContext, useEffect, useId, useRef } from "react";
 
 // 30도 내려다보고 45도 돌린 등각 화면의 가로·세로 투영 비율 지정
 const C45 = Math.SQRT1_2;
 const COS30 = Math.cos(Math.PI / 6);
+const SIN30 = 0.5;
 const HALF = 0.5 * C45;
+// 값 구간이 바뀌어 색이 바뀔 때 버튼 반전과 같은 0.3초 동안 넘어가도록 지정
+const FADE = "300ms ease";
+// 3D 공용 캔버스가 있던 층과 같은 높이에 그려 주변 요소와 겹치는 순서를 그대로 유지하도록 지정
+export const LAYER = 1;
+// 윗면 흰빛→색 흐름을 선형 색 공간에서 나눠 찍을 단계 수 지정
+const TOP_STOPS = 16;
 
 // 등각 공간 좌표를 화면 가운데 기준 px 위치(아래가 +)로 변환
 export function isoToScreen(x: number, y: number, z: number) {
@@ -43,33 +45,60 @@ export type IsoShade = {
 
 export const ISO_SHADE: IsoShade = { left: [0.85, 0.35], right: [0.5, 0.15], topWhite: 0.7, topAlpha: 1 };
 
-// 면마다 Figma 등각 도형의 색·불투명도 흐름을 꼭짓점에 칠한 높이 1 짜리 상자 생성
-export function isoBoxGeometry(token: string, shade: IsoShade = ISO_SHADE) {
-  const g = new BoxGeometry(1, 1, 1);
-  g.translate(0, 0.5, 0);
-  const tone = new Color(cssColor(token));
-  const white = new Color("#ffffff");
-  const pos = g.getAttribute("position");
-  const normal = g.getAttribute("normal");
-  const colors = new Float32Array(pos.count * 4);
-  for (let i = 0; i < pos.count; i++) {
-    const top = pos.getY(i) > 0.5;
-    let c = tone;
-    let a = 0.3;
-    if (normal.getY(i) > 0.5) {
-      // 화면 왼쪽 모서리일수록 흰빛이 많이 섞이도록 계산
-      const t = (pos.getX(i) + pos.getZ(i) + 1) / 2;
-      c = white.clone().lerp(tone, t);
-      a = shade.topWhite + (shade.topAlpha - shade.topWhite) * t;
-    } else if (normal.getX(i) < -0.5) {
-      a = top ? shade.left[0] : shade.left[1];
-    } else if (normal.getZ(i) > 0.5) {
-      a = top ? shade.right[0] : shade.right[1];
-    }
-    colors.set([c.r, c.g, c.b, a], i * 4);
+const Center = createContext<readonly [number, number]>([0, 0]);
+
+type Vec = readonly [number, number, number];
+type Pt = readonly [number, number];
+
+const pts = (list: readonly Pt[]) => list.map(([x, y]) => `${x},${y}`).join(" ");
+
+// 3D 렌더러가 반투명 물체를 카메라에서 먼 것부터 칠하던 순서의 깊이 값 계산
+function depth([x, y, z]: Vec) {
+  const zr = -C45 * x + C45 * z;
+  return y * SIN30 + zr * COS30;
+}
+
+// 윗면 모서리에서 아래 모서리까지 면을 가로지르는 그라데이션 방향 계산
+function across(a: Pt, b: Pt, drop: number): [Pt, Pt] {
+  const ex = b[0] - a[0];
+  const ey = b[1] - a[1];
+  const len = Math.hypot(ex, ey) || 1;
+  // 모서리에 수직이고 아래를 향하는 단위 벡터 계산
+  let nx = -ey / len;
+  let ny = ex / len;
+  if (ny < 0) {
+    nx = -nx;
+    ny = -ny;
   }
-  g.setAttribute("color", new BufferAttribute(colors, 4));
-  return g;
+  const l = drop * ny;
+  return [a, [a[0] + nx * l, a[1] + ny * l]];
+}
+
+type Tick = (t: number, dt: number) => void;
+const subscribers = new Set<Tick>();
+let frame = 0;
+let last = 0;
+let start = 0;
+
+// 모든 기둥이 한 번의 화면 갱신 주기를 함께 쓰도록 등록 처리
+function subscribe(fn: Tick) {
+  subscribers.add(fn);
+  if (!frame) {
+    const loop = (now: number) => {
+      if (!start) {
+        start = now;
+        last = now;
+      }
+      const dt = (now - last) / 1000;
+      last = now;
+      subscribers.forEach((s) => s((now - start) / 1000, dt));
+      frame = subscribers.size ? requestAnimationFrame(loop) : 0;
+    };
+    frame = requestAnimationFrame(loop);
+  }
+  return () => {
+    subscribers.delete(fn);
+  };
 }
 
 type IsoPrismProps = {
@@ -78,7 +107,7 @@ type IsoPrismProps = {
   side: number;
   // 목표 높이 지정
   height: number;
-  position: readonly [number, number, number];
+  position: Vec;
   shade?: IsoShade;
   // 윗면 테두리 선을 그리도록 지정
   outline?: boolean;
@@ -91,57 +120,135 @@ type IsoPrismProps = {
   onSettled?: () => void;
 };
 
-// 목표 높이까지 자라고 선택적으로 떠 있는 반투명 등각 기둥 표시
-export function IsoPrism({ token, side, height, position, shade, outline = false, bob = 0, phase = 0, onClick, onHover, onSettled }: IsoPrismProps) {
-  const mesh = useRef<Mesh>(null);
-  const edge = useRef<{ position: { y: number } }>(null);
+// 목표 높이까지 자라고 선택적으로 떠 있는 반투명 등각 기둥을 SVG 면으로 표시
+export function IsoPrism({ token, side, height, position, shade = ISO_SHADE, outline = false, bob = 0, phase = 0, onClick, onHover, onSettled }: IsoPrismProps) {
+  const [cx, cy] = useContext(Center);
+  const id = useId().replace(/:/g, "");
+  const leftRef = useRef<SVGPolygonElement>(null);
+  const rightRef = useRef<SVGPolygonElement>(null);
+  const topRef = useRef<SVGPolygonElement>(null);
+  const lineRefs = useRef<(SVGLineElement | null)[]>([]);
+  const leftGrad = useRef<SVGLinearGradientElement>(null);
+  const rightGrad = useRef<SVGLinearGradientElement>(null);
+  const topGrad = useRef<SVGLinearGradientElement>(null);
   const shown = useRef(0);
   const settled = useRef(false);
-  const geo = useMemo(() => isoBoxGeometry(token, shade), [token, shade]);
-  const h = side / 2;
-  const ring = useMemo(() => [[-h, 0, -h], [h, 0, -h], [h, 0, h], [-h, 0, h], [-h, 0, -h]] as [number, number, number][], [h]);
-
-  useFrame(({ clock }, delta) => {
-    // 높이가 목표까지 부드럽게 자라고 떠 있는 기둥은 위아래로 흔들리도록 갱신
-    shown.current += (height - shown.current) * (1 - Math.exp(-delta * 4));
-    if (!settled.current && Math.abs(height - shown.current) <= Math.max(0.5, height * 0.02)) {
-      settled.current = true;
-      onSettled?.();
-    }
-    const lift = bob ? Math.sin(clock.elapsedTime * 1.4 + phase) * bob : 0;
-    if (mesh.current) {
-      mesh.current.scale.set(side, Math.max(0.01, shown.current), side);
-      mesh.current.position.y = position[1] + lift;
-    }
-    if (edge.current) edge.current.position.y = position[1] + lift + Math.max(0.01, shown.current);
+  // 매 프레임 계산이 최신 값을 읽도록 보관
+  const live = useRef({ height, side, position, bob, phase, onSettled });
+  useEffect(() => {
+    live.current = { height, side, position, bob, phase, onSettled };
   });
 
-  return (
-    <>
-      <mesh
-        ref={mesh}
-        geometry={geo}
-        position={[position[0], position[1], position[2]]}
-        onClick={onClick}
-        onPointerOver={
-          onHover
-            ? (e) => {
-                // 겹쳐 보이는 뒤쪽 기둥까지 이벤트가 전달되지 않도록 가장 앞 기둥에서 멈추기 처리
-                e.stopPropagation();
-                onHover(true);
-              }
-            : undefined
+  useEffect(
+    () =>
+      subscribe((t, dt) => {
+        const v = live.current;
+        // 높이가 목표까지 부드럽게 자라고 떠 있는 기둥은 위아래로 흔들리도록 계산
+        shown.current += (v.height - shown.current) * (1 - Math.exp(-dt * 4));
+        if (!settled.current && Math.abs(v.height - shown.current) <= Math.max(0.5, v.height * 0.02)) {
+          settled.current = true;
+          v.onSettled?.();
         }
-        onPointerOut={onHover ? () => onHover(false) : undefined}
-      >
-        <meshBasicMaterial vertexColors transparent depthWrite={false} />
-      </mesh>
-      {outline && (
-        <group ref={edge as never} position={[position[0], 0, position[2]]}>
-          <Line points={ring} color={cssColor(token)} lineWidth={1.2} transparent opacity={0.9} />
-        </group>
-      )}
-    </>
+        const lift = v.bob ? Math.sin(t * 1.4 + v.phase) * v.bob : 0;
+        const [px, py, pz] = v.position;
+        const h = v.side / 2;
+        const y0 = py + lift;
+        const y1 = y0 + Math.max(0.01, shown.current);
+        const p = (x: number, y: number, z: number): Pt => {
+          const [sx, sy] = isoToScreen(x, y, z);
+          return [cx + sx, cy + sy];
+        };
+        const lb = p(px - h, y0, pz - h);
+        const fb = p(px - h, y0, pz + h);
+        const rb = p(px + h, y0, pz + h);
+        const lt = p(px - h, y1, pz - h);
+        const bt = p(px + h, y1, pz - h);
+        const ft = p(px - h, y1, pz + h);
+        const rt = p(px + h, y1, pz + h);
+        leftRef.current?.setAttribute("points", pts([lb, fb, ft, lt]));
+        rightRef.current?.setAttribute("points", pts([fb, rb, rt, ft]));
+        topRef.current?.setAttribute("points", pts([lt, bt, rt, ft]));
+        const drop = fb[1] - ft[1];
+        for (const [g, a, b] of [
+          [leftGrad.current, lt, ft],
+          [rightGrad.current, ft, rt],
+        ] as const) {
+          if (!g) continue;
+          const [s, e] = across(a, b, drop);
+          g.setAttribute("x1", `${s[0]}`);
+          g.setAttribute("y1", `${s[1]}`);
+          g.setAttribute("x2", `${e[0]}`);
+          g.setAttribute("y2", `${e[1]}`);
+        }
+        if (topGrad.current) {
+          topGrad.current.setAttribute("x1", `${lt[0]}`);
+          topGrad.current.setAttribute("x2", `${rt[0]}`);
+        }
+        const ring = [lt, bt, rt, ft];
+        lineRefs.current.forEach((l, i) => {
+          if (!l) return;
+          const a = ring[i];
+          const b = ring[(i + 1) % 4];
+          l.setAttribute("x1", `${a[0]}`);
+          l.setAttribute("y1", `${a[1]}`);
+          l.setAttribute("x2", `${b[0]}`);
+          l.setAttribute("y2", `${b[1]}`);
+        });
+      }),
+    [cx, cy],
+  );
+
+  const fade = { transition: `stop-color ${FADE}, stop-opacity ${FADE}` };
+  const tone = `var(${token})`;
+  return (
+    <g
+      onClick={onClick}
+      onPointerEnter={onHover ? () => onHover(true) : undefined}
+      onPointerLeave={onHover ? () => onHover(false) : undefined}
+      className={onClick ? "pointer-events-auto cursor-pointer" : onHover ? "pointer-events-auto" : undefined}
+    >
+      <defs>
+        <linearGradient ref={leftGrad} id={`${id}-l`} gradientUnits="userSpaceOnUse">
+          <stop offset="0" style={{ ...fade, stopColor: tone, stopOpacity: shade.left[0] }} />
+          <stop offset="1" style={{ ...fade, stopColor: tone, stopOpacity: shade.left[1] }} />
+        </linearGradient>
+        <linearGradient ref={rightGrad} id={`${id}-r`} gradientUnits="userSpaceOnUse">
+          <stop offset="0" style={{ ...fade, stopColor: tone, stopOpacity: shade.right[0] }} />
+          <stop offset="1" style={{ ...fade, stopColor: tone, stopOpacity: shade.right[1] }} />
+        </linearGradient>
+        <linearGradient ref={topGrad} id={`${id}-t`} gradientUnits="userSpaceOnUse" y1="0" y2="0">
+          {/* 3D 렌더러처럼 선형 색 공간에서 흰빛과 색을 섞은 단계 색 지정 */}
+          {Array.from({ length: TOP_STOPS + 1 }, (_, k) => {
+            const t = k / TOP_STOPS;
+            return (
+              <stop
+                key={k}
+                offset={t}
+                style={{
+                  ...fade,
+                  stopColor: `color-mix(in srgb-linear, ${tone} ${t * 100}%, white)`,
+                  stopOpacity: shade.topWhite + (shade.topAlpha - shade.topWhite) * t,
+                }}
+              />
+            );
+          })}
+        </linearGradient>
+      </defs>
+      <polygon ref={leftRef} fill={`url(#${id}-l)`} />
+      <polygon ref={topRef} fill={`url(#${id}-t)`} />
+      <polygon ref={rightRef} fill={`url(#${id}-r)`} />
+      {outline &&
+        [0, 1, 2, 3].map((i) => (
+          <line
+            key={i}
+            ref={(l) => void (lineRefs.current[i] = l)}
+            className="pointer-events-none"
+            strokeWidth={1.2}
+            strokeLinecap="round"
+            style={{ stroke: tone, strokeOpacity: 0.9, transition: `stroke ${FADE}` }}
+          />
+        ))}
+    </g>
   );
 }
 
@@ -153,11 +260,20 @@ type IsoViewProps = {
   children: ReactNode;
 };
 
-// Figma 등각 그림처럼 30도 내려다보고 45도 돌린 3D 창을 틀보다 조금 넓게 생성
+// Figma 등각 그림처럼 30도 내려다보고 45도 돌린 그림 틀을 만들고 먼 기둥부터 차례로 겹쳐 그리도록 정렬
 export function IsoView({ width, height, pad = 24, children }: IsoViewProps) {
+  const w = width + pad * 2;
+  const h = height + pad * 2;
+  const items = Children.toArray(children).filter(isValidElement) as ReactElement<{ position?: Vec }>[];
+  const sorted = items
+    .map((el, i) => ({ el, i, d: el.props.position ? depth(el.props.position) : 0 }))
+    .sort((a, b) => a.d - b.d || a.i - b.i)
+    .map((x) => x.el);
   return (
-    <TiltView width={width + pad * 2} height={height + pad * 2} elevation={30} className="absolute!" style={{ left: -pad, top: -pad }}>
-      <group rotation={[0, Math.PI / 4, 0]}>{children}</group>
-    </TiltView>
+    <svg className="pointer-events-none absolute overflow-hidden" style={{ left: -pad, top: -pad, zIndex: LAYER }} width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
+      <Center.Provider value={[w / 2, h / 2]}>
+        {sorted}
+      </Center.Provider>
+    </svg>
   );
 }

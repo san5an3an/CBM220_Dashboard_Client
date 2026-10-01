@@ -45,9 +45,14 @@ export function Percentile3D({ data = DEFAULT_DATA, selected: initial = "99.6", 
       <div className="absolute top-[150px] left-2.5 h-[70px] w-[360px] rounded-[50%]" style={{ background: `radial-gradient(closest-side, ${tint("--accent-cyan", 30)}, transparent)` }} />
       {data.map((d, i) => {
         const cx = 40 + i * STEP;
-        return d.percentile === selected ? (
-          <div key={d.percentile} className="absolute size-16 -translate-1/2 rounded-full blur-[18px]" style={{ left: cx, top: BASE_Y - shown[i] / 2, background: tint("--status-danger", 45) }} />
-        ) : null;
+        // 고른 큐브 뒤 빛 번짐이 색 전환과 같은 0.3초 동안 나타나고 사라지도록 처리
+        return (
+          <div
+            key={d.percentile}
+            className="absolute size-16 -translate-1/2 rounded-full blur-[18px] transition-opacity duration-300 ease-out"
+            style={{ left: cx, top: BASE_Y - shown[i] / 2, background: tint("--status-danger", 45), opacity: d.percentile === selected ? 1 : 0 }}
+          />
+        );
       })}
       <IsoView width={W} height={H}>
         {data.map((d, i) => {
