@@ -17,6 +17,8 @@ type PipelineStepProps = {
   type?: "metric" | "status";
   // 다음 단계로 이어지는 화살표 표시 지정
   showArrow?: boolean;
+  // 진행 중이면 번호 대신 원형 로딩 표시 지정
+  loading?: boolean;
 };
 
 // 진단 단계 하나를 번호 구슬·수치·다음 단계 화살표로 표시하고 화살표 빛이 흐르도록 갱신
@@ -29,6 +31,7 @@ export function PipelineStep({
   tone = "slate",
   type = "metric",
   showArrow = true,
+  loading = false,
 }: PipelineStepProps) {
   const token = TONE[tone];
   const metric = type === "metric";
@@ -49,7 +52,21 @@ export function PipelineStep({
           boxShadow: `0 4px 16px 0 ${tint(token, 60)}, inset 0 2px 0 0 rgba(255,255,255,0.5)`,
         }}
       >
-        <p className={`relative text-(--text-on-accent) ${metric ? `font-bold ${TEXT.titleMedium}` : `font-semibold ${TEXT.labelLarge}`}`}>{step}</p>
+        {loading ? (
+          // 번호 자리에서 꼬리가 옅어지는 호가 도는 로딩 표시
+          <span role="status" aria-label={`${step} 진행 중`} className="relative" style={{ width: orb / 2, height: orb / 2 }}>
+            <span
+              aria-hidden
+              className="absolute inset-0 animate-spin rounded-full [animation-duration:0.9s]"
+              style={{
+                background: "conic-gradient(from 0deg, transparent 0deg 60deg, color-mix(in srgb, var(--text-on-accent) 25%, transparent) 150deg, var(--text-on-accent) 360deg)",
+                mask: "radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px))",
+              }}
+            />
+          </span>
+        ) : (
+          <p className={`relative text-(--text-on-accent) ${metric ? `font-bold ${TEXT.titleMedium}` : `font-semibold ${TEXT.labelLarge}`}`}>{step}</p>
+        )}
       </div>
       <div className="relative flex min-w-px flex-1 flex-col items-start gap-0.5 overflow-clip whitespace-nowrap">
         <p className={`font-semibold text-(--text-secondary) ${TEXT.labelLarge}`}>{label}</p>
