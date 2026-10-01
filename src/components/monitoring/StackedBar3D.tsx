@@ -1,12 +1,9 @@
 "use client";
 
-import { type ThreeEvent, useFrame } from "@react-three/fiber";
-import { useMemo, useRef, useState } from "react";
-import { BoxGeometry, BufferAttribute, Color, type Mesh } from "three";
-import { cssColor } from "@/components/dashboard/consist/three/materials";
-import { ObliqueView } from "@/components/three/ObliqueView";
+import { useEffect, useId, useRef, useState } from "react";
+import { LAYER, subscribe } from "@/components/three/iso";
 import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
-import { STATUS, STATUS_NAME, type Status, tint } from "@/lib/tone";
+import { STATUS, STATUS_NAME, type Status } from "@/lib/tone";
 import { clamp, useInterval } from "./live";
 
 // Figma 막대 전체 폭·앞면 높이·두께와 구간 순서 지정
@@ -18,63 +15,68 @@ const VIEW_H = FRONT_H + DEPTH;
 const ORDER: Status[] = ["normal", "run", "inspect", "fault", "base", "end"];
 const LIVE_MS = 3500;
 
-// 앞면은 위에서 아래로 어두워지고 윗면은 밝고 옆면은 어두운 색을 꼭짓점에 칠한 상자 생성
-function toneBox(token: string) {
-  const g = new BoxGeometry(1, FRONT_H, DEPTH);
-  const base = new Color(cssColor(token));
-  const top = base.clone().lerp(new Color("#ffffff"), 0.35);
-  const dark = base.clone().multiplyScalar(0.55);
-  const side = base.clone().multiplyScalar(0.35);
-  const pos = g.getAttribute("position");
-  const normal = g.getAttribute("normal");
-  const colors = new Float32Array(pos.count * 3);
-  for (let i = 0; i < pos.count; i++) {
-    const c = normal.getY(i) > 0.5 ? top : normal.getX(i) > 0.5 ? side : pos.getY(i) > 0 ? base : dark;
-    colors.set([c.r, c.g, c.b], i * 3);
-  }
-  g.setAttribute("color", new BufferAttribute(colors, 3));
-  return g;
-}
+// 앞면 위→아래 어두워짐을 3D 렌더러처럼 선형 색 공간에서 나눠 찍을 단계 수 지정
+const FRONT_STOPS = 8;
+// 구간이 바뀔 때 버튼 반전과 같은 0.3초 동안 색이 넘어가도록 지정
+const FADE = "300ms ease";
 
-function Bars({ values, onHover }: { values: number[]; onHover: (i: number | null, e?: ThreeEvent<PointerEvent>) => void }) {
-  const meshes = useRef<(Mesh | null)[]>([]);
+type BarsProps = { values: number[]; onHover: (i: number | null, e?: { clientX: number; clientY: number }) => void };
+
+// 앞면은 위에서 아래로 어두워지고 윗면은 밝고 옆면은 어두운 상자들을 구간 폭이 목표 비율까지 늘고 줄며 이어 붙도록 표시
+function Bars({ values, onHover }: BarsProps) {
+  const id = useId().replace(/:/g, "");
+  const faces = useRef<{ front: SVGPolygonElement | null; top: SVGPolygonElement | null; side: SVGPolygonElement | null }[]>([]);
   const widths = useRef(values.map(() => 0));
-  const geos = useMemo(() => ORDER.map((s) => toneBox(STATUS[s])), []);
-
-  useFrame((_, delta) => {
-    // 구간 폭이 목표 비율까지 부드럽게 늘고 줄며 차례로 이어 붙도록 갱신
-    const total = values.reduce((a, b) => a + b, 0) || 1;
-    let x = 0;
-    values.forEach((v, i) => {
-      const target = (v / total) * BAR_W;
-      widths.current[i] += (target - widths.current[i]) * (1 - Math.exp(-delta * 5));
-      const w = Math.max(0.001, widths.current[i]);
-      const m = meshes.current[i];
-      if (m) {
-        m.scale.x = w;
-        m.position.set(x + w / 2, -DEPTH - FRONT_H / 2, -DEPTH / 2);
-      }
-      x += w;
-    });
+  const live = useRef(values);
+  useEffect(() => {
+    live.current = values;
   });
 
+  useEffect(
+    () =>
+      subscribe((_, dt) => {
+        const vals = live.current;
+        const total = vals.reduce((a, b) => a + b, 0) || 1;
+        let x = 0;
+        vals.forEach((v, i) => {
+          const target = (v / total) * BAR_W;
+          widths.current[i] += (target - widths.current[i]) * (1 - Math.exp(-dt * 5));
+          const w = Math.max(0.001, widths.current[i]);
+          const f = faces.current[i];
+          if (f) {
+            const x1 = x + w;
+            f.front?.setAttribute("points", `${x},${DEPTH} ${x1},${DEPTH} ${x1},${VIEW_H} ${x},${VIEW_H}`);
+            f.top?.setAttribute("points", `${x},${DEPTH} ${x1},${DEPTH} ${x1 + DEPTH},0 ${x + DEPTH},0`);
+            f.side?.setAttribute("points", `${x1},${DEPTH} ${x1 + DEPTH},0 ${x1 + DEPTH},${FRONT_H} ${x1},${VIEW_H}`);
+          }
+          x += w;
+        });
+      }),
+    [],
+  );
+
   return (
-    <>
-      {geos.map((g, i) => (
-        <mesh
-          key={ORDER[i]}
-          ref={(m) => void (meshes.current[i] = m)}
-          geometry={g}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            onHover(i, e);
-          }}
-          onPointerOut={() => onHover(null)}
-        >
-          <meshBasicMaterial vertexColors />
-        </mesh>
-      ))}
-    </>
+    <svg className="pointer-events-none absolute inset-0" style={{ zIndex: LAYER }} width={VIEW_W} height={VIEW_H} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}>
+      {ORDER.map((s, i) => {
+        const tone = `var(${STATUS[s]})`;
+        const fade = { transition: `fill ${FADE}, stop-color ${FADE}` };
+        return (
+          <g key={s} className="pointer-events-auto" onPointerEnter={(e) => onHover(i, e)} onPointerLeave={() => onHover(null)}>
+            <defs>
+              <linearGradient id={`${id}-${i}`} x1="0" y1="0" x2="0" y2="1">
+                {/* 3D 렌더러처럼 선형 색 공간에서 위는 원래 색, 아래는 0.55 배로 어둡게 섞은 단계 색 지정 */}
+                {Array.from({ length: FRONT_STOPS + 1 }, (_, k) => (
+                  <stop key={k} offset={k / FRONT_STOPS} style={{ ...fade, stopColor: `color-mix(in srgb-linear, ${tone} ${100 - (45 * k) / FRONT_STOPS}%, black)` }} />
+                ))}
+              </linearGradient>
+            </defs>
+            <polygon ref={(el) => void ((faces.current[i] ??= { front: null, top: null, side: null }).side = el)} style={{ ...fade, fill: `color-mix(in srgb-linear, ${tone} 35%, black)` }} />
+            <polygon ref={(el) => void ((faces.current[i] ??= { front: null, top: null, side: null }).top = el)} style={{ ...fade, fill: `color-mix(in srgb-linear, ${tone} 65%, white)` }} />
+            <polygon ref={(el) => void ((faces.current[i] ??= { front: null, top: null, side: null }).front = el)} fill={`url(#${id}-${i})`} />
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
@@ -104,11 +106,7 @@ export function StackedBar3D({ values = [227.7, 53.1, 27.3, 13.7, 10, 10], live 
   const total = data.reduce((a, b) => a + b, 0) || 1;
   return (
     <div className="relative" style={{ width: VIEW_W, height: VIEW_H }} onPointerMove={track} onPointerLeave={hide}>
-      <div className="absolute inset-0" style={{ filter: `drop-shadow(0 10px 10px ${tint("--accent-cyan", 18)})` }}>
-        <ObliqueView width={VIEW_W} height={VIEW_H} className="absolute! inset-0">
-          <Bars values={data} onHover={(i, e) => (i === null ? hide() : show(i, e?.nativeEvent))} />
-        </ObliqueView>
-      </div>
+      <Bars values={data} onHover={(i, e) => (i === null ? hide() : show(i, e))} />
       {tip && (
         <ValueTip
           at={tip}
