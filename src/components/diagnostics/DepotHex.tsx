@@ -1,17 +1,13 @@
 "use client";
 
-import { Line } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
 import { ArrowDownRight, ArrowUpRight, Undo2 } from "lucide-react";
-import { type CSSProperties, useMemo, useRef, useState } from "react";
-import { Color, type Group, SRGBColorSpace } from "three";
-import { cssColor } from "@/components/dashboard/consist/three/materials";
-import { TiltView } from "@/components/three/TiltView";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { tint } from "@/lib/tone";
 import { TEXT } from "@/lib/typography";
 
 // Figma 윗면 140×80·옆면 16px 에서 역산한 내려다보는 각도(도)와 프리즘 두께 지정
 const HEX_ELEVATION = (Math.asin(80 / (140 * Math.sin(Math.PI / 3))) * 180) / Math.PI;
+const SIN = Math.sin((HEX_ELEVATION * Math.PI) / 180);
 const COS = Math.cos((HEX_ELEVATION * Math.PI) / 180);
 export const HEX_HEIGHT = 16 / COS;
 export const HEX_W = 140;
@@ -20,6 +16,12 @@ export const HEX_H = 96;
 const HEX_TOP_Y = HEX_HEIGHT / 2;
 // 마우스를 올리면 떠오르는 높이(월드 단위) 지정
 const LIFT = 8;
+// 상태가 바뀔 때 버튼 반전과 같은 0.3초 동안 색이 넘어가도록 지정
+const FADE = { transition: "fill 300ms ease, stroke 300ms ease, stroke-opacity 300ms ease, stroke-width 300ms ease" };
+// 그림 틀을 타일보다 사방으로 넓힌 여백(px) 지정
+const PAD = 12;
+const VIEW_W = HEX_W + PAD * 2;
+const VIEW_H = HEX_H + PAD * 2;
 
 export const DEPOT_STATE = {
   up: { token: "--status-success", icon: ArrowUpRight },
@@ -29,22 +31,53 @@ export const DEPOT_STATE = {
 
 export type DepotState = keyof typeof DEPOT_STATE;
 
-// 윗면 여섯 꼭짓점을 좌우 꼭짓점·앞뒤 평평한 변 순서로 계산
-const RING: [number, number, number][] = Array.from({ length: 7 }, (_, i) => {
-  const a = Math.PI / 6 + (i * Math.PI) / 3;
-  return [70 * Math.sin(a), HEX_TOP_Y + 0.2, 70 * Math.cos(a)];
-});
+// 내려다보는 각도로 본 월드 좌표를 그림 틀 안 px 좌표로 변환
+const project = (x: number, y: number, z: number): [number, number] => [VIEW_W / 2 + x, VIEW_H / 2 - (y * COS - z * SIN)];
+const pts = (list: [number, number][]) => list.map(([x, y]) => `${x},${y}`).join(" ");
 
-// Figma 처럼 화면 색(sRGB) 기준으로 상태 색과 남색을 섞은 색 생성
-function mixSrgb(token: string, t: number) {
-  const a = new Color(cssColor(token)).getRGB({ r: 0, g: 0, b: 0 }, SRGBColorSpace);
-  const b = new Color(cssColor("--navy-800")).getRGB({ r: 0, g: 0, b: 0 }, SRGBColorSpace);
-  return new Color().setRGB(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, SRGBColorSpace);
+// 육각 꼭짓점 여섯 개를 좌우 꼭짓점·앞뒤 평평한 변 순서로 계산
+const CORNERS = Array.from({ length: 6 }, (_, i) => {
+  const a = Math.PI / 6 + (i * Math.PI) / 3;
+  return [70 * Math.sin(a), 70 * Math.cos(a)] as const;
+});
+const TOP = CORNERS.map(([x, z]) => project(x, HEX_TOP_Y, z));
+const RING = CORNERS.map(([x, z]) => project(x, HEX_TOP_Y + 0.2, z));
+// 앞쪽 옆면 세 개를 합친 띠를 윗면 안쪽까지 덮도록 계산
+const SIDE = pts([project(-70, HEX_TOP_Y, 0), project(70, HEX_TOP_Y, 0), ...[1, 0, 5, 4].map((i) => project(CORNERS[i][0], -HEX_TOP_Y, CORNERS[i][1]))]);
+const TOP_POINTS = pts(TOP);
+
+// 쉬는 위치부터 떠오른 위치까지 타일이 지나는 자리를 덮는 움직이지 않는 마우스 감지 영역 계산
+const HIT = pts([
+  ...[4, 3, 2, 1].map((i) => project(CORNERS[i][0], HEX_TOP_Y + LIFT, CORNERS[i][1])),
+  ...[1, 0, 5, 4].map((i) => project(CORNERS[i][0], -HEX_TOP_Y, CORNERS[i][1])),
+]);
+
+// 두 직선(점과 방향)의 교점 계산
+function meet(p: [number, number], d: [number, number], q: [number, number], e: [number, number]): [number, number] {
+  const t = ((q[0] - p[0]) * e[1] - (q[1] - p[1]) * e[0]) / (d[0] * e[1] - d[1] * e[0]);
+  return [p[0] + d[0] * t, p[1] + d[1] * t];
 }
+
+// 3D 에서 윗면이 뒤쪽 테두리선의 아래쪽을 가리던 깊이 비교를 재현하는 덮개 계산
+const OCCLUDER = (() => {
+  // 선이 윗면보다 0.2 높아 선 중심보다 화면에서 0.2/cos 넘게 아래인 윗면이 선보다 가까움
+  const reach = 0.2 / COS;
+  // 꼭짓점 순서: 0 앞오른쪽 · 1 오른쪽 · 2 뒤오른쪽 · 3 뒤왼쪽 · 4 왼쪽 · 5 앞왼쪽
+  const edges = [0, 1, 2, 3, 4, 5].map((i) => {
+    const a = RING[i];
+    const b = RING[(i + 1) % 6];
+    const d: [number, number] = [b[0] - a[0], b[1] - a[1]];
+    const back = i >= 1 && i <= 3;
+    // 뒤쪽 변은 깊이 경계까지 내리고 앞쪽 변은 선을 덮지 않도록 안쪽으로 물림
+    const cos2 = (d[0] * d[0]) / (d[0] * d[0] + d[1] * d[1]);
+    const shift = back ? reach / cos2 : -3;
+    return { p: [a[0], a[1] + shift] as [number, number], d };
+  });
+  return pts(edges.map((e, i) => meet(edges[(i + 5) % 6].p, edges[(i + 5) % 6].d, e.p, e.d)));
+})();
 
 type HexPrismProps = {
   state: DepotState;
-  position: readonly [number, number, number];
   hovered?: boolean;
   selected?: boolean;
   // 처음 솟아오르는 순서 지연(초) 지정
@@ -54,42 +87,74 @@ type HexPrismProps = {
 };
 
 // 상태 색 육각 프리즘을 아래에서 솟아오르게 하고 마우스를 올리거나 고르면 떠오르도록 갱신
-function HexPrism({ state, position, hovered = false, selected = false, delay = 0, onHover, onClick }: HexPrismProps) {
-  const ref = useRef<Group>(null);
-  const start = useRef<number | null>(null);
+function HexPrism({ state, hovered = false, selected = false, delay = 0, onHover, onClick }: HexPrismProps) {
+  const ref = useRef<SVGGElement>(null);
+  const lifted = useRef(hovered || selected);
+  useEffect(() => {
+    lifted.current = hovered || selected;
+  }, [hovered, selected]);
+  useEffect(() => {
+    let raf = 0;
+    let start: number | null = null;
+    let last = 0;
+    let y = -40;
+    const tick = (now: number) => {
+      const g = ref.current;
+      if (g) {
+        if (start === null) {
+          start = now;
+          last = now;
+        }
+        const delta = (now - last) / 1000;
+        last = now;
+        // 처음에는 아래에서 솟아오르고 이후에는 떠오름 높이를 부드럽게 따라가도록 계산
+        const t = Math.min(1, Math.max(0, ((now - start) / 1000 - delay) / 0.6));
+        const target = -((1 - t) ** 3) * 40 + (lifted.current ? LIFT : 0);
+        y = t < 1 ? target : y + (target - y) * (1 - Math.exp(-delta * 10));
+        g.style.visibility = t > 0 ? "visible" : "hidden";
+        g.setAttribute("transform", `translate(0 ${-y * COS})`);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [delay]);
   const token = DEPOT_STATE[state].token;
-  const [top, side] = useMemo(() => [mixSrgb(token, 0.45), mixSrgb(token, 0.55)], [token]);
-  useFrame(({ clock }, delta) => {
-    const g = ref.current;
-    if (!g) return;
-    if (start.current === null) start.current = clock.elapsedTime;
-    // 처음에는 아래에서 솟아오르고 이후에는 떠오름 높이를 부드럽게 따라가도록 계산
-    const t = Math.min(1, Math.max(0, (clock.elapsedTime - start.current - delay) / 0.6));
-    const lift = hovered || selected ? LIFT : 0;
-    const target = position[1] - (1 - t) ** 3 * 40 + lift;
-    g.position.y = t < 1 ? target : g.position.y + (target - g.position.y) * (1 - Math.exp(-delta * 10));
-    g.visible = t > 0;
-  });
   return (
-    <group ref={ref} position={[position[0], position[1] - 40, position[2]]} visible={false}>
-      <mesh
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          onHover?.(true);
-        }}
-        onPointerOut={() => onHover?.(false)}
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick?.();
-        }}
-      >
-        <cylinderGeometry args={[70, 70, HEX_HEIGHT, 6, 1, false, Math.PI / 6]} />
-        <meshBasicMaterial attach="material-0" color={side} />
-        <meshBasicMaterial attach="material-1" color={top} />
-        <meshBasicMaterial attach="material-2" color={side} />
-      </mesh>
-      <Line points={RING} color={cssColor(token)} transparent opacity={selected ? 1 : 0.8} lineWidth={selected ? 2.4 : 1.5} />
-    </group>
+    <svg aria-hidden width={VIEW_W} height={VIEW_H} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} className="pointer-events-none absolute" style={{ left: -PAD, top: -PAD }}>
+      <g ref={ref} transform={`translate(0 ${40 * COS})`} style={{ visibility: "hidden" }}>
+        {/* 3D 렌더러가 반올림 경계(x.5)를 올림하던 결과에 맞춰 비율을 0.001% 높여 지정 */}
+        <polygon style={FADE} points={SIDE} fill={`color-mix(in srgb, var(${token}) 45.001%, var(--navy-800))`} />
+        <polygon style={FADE} points={TOP_POINTS} fill={`color-mix(in srgb, var(${token}) 55%, var(--navy-800))`} />
+        {/* 3D 선처럼 변마다 둥근 끝 선을 따로 그려 꼭짓점 겹침까지 같게 표시 */}
+        {RING.map(([x1, y1], i) => {
+          const [x2, y2] = RING[(i + 1) % 6];
+          return (
+            <line
+              key={i}
+              x1={x1}
+              y1={y1}
+              x2={x2}
+              y2={y2}
+              stroke={`var(${token})`}
+              strokeOpacity={selected ? 1 : 0.8}
+              strokeWidth={selected ? 2.4 : 1.5}
+              strokeLinecap="round"
+              style={FADE}
+            />
+          );
+        })}
+        <polygon style={FADE} points={OCCLUDER} fill={`color-mix(in srgb, var(${token}) 55%, var(--navy-800))`} />
+      </g>
+      <polygon
+        points={HIT}
+        fill="transparent"
+        className="pointer-events-auto"
+        onPointerEnter={() => onHover?.(true)}
+        onPointerLeave={() => onHover?.(false)}
+        onClick={onClick}
+      />
+    </svg>
   );
 }
 
@@ -120,16 +185,14 @@ type DepotHexProps = {
   onSelect?: () => void;
 };
 
-// 편성 하나를 상태 색 3D 육각 타일로 표시하고 마우스를 올리면 떠오르도록 갱신
+// 편성 하나를 상태 색 입체 육각 타일로 표시하고 마우스를 올리면 떠오르도록 갱신
 export function DepotHex({ number = "401", state = "up", station = "당고개", selected = false, onSelect }: DepotHexProps) {
   const [hover, setHover] = useState(false);
   const token = DEPOT_STATE[state].token;
   return (
     <div className="relative shrink-0" style={{ width: HEX_W, height: HEX_H }}>
       <div aria-hidden className="absolute inset-x-3 bottom-0 h-6 rounded-full blur-[10px]" style={{ background: tint(token, state === "depot" ? 15 : 35) }} />
-      <TiltView width={HEX_W + 24} height={HEX_H + 24} elevation={HEX_ELEVATION} className="absolute!" style={{ left: -12, top: -12 }}>
-        <HexPrism state={state} position={[0, 0, 0]} hovered={hover} selected={selected} onHover={setHover} onClick={onSelect} />
-      </TiltView>
+      <HexPrism state={state} hovered={hover} selected={selected} onHover={setHover} onClick={onSelect} />
       <HexLabel number={number} station={station} state={state} lifted={hover || selected} style={{ left: 70, top: 18 }} />
     </div>
   );
