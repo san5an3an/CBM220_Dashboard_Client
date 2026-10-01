@@ -35,7 +35,7 @@ type FaultListRowProps = Partial<FaultRecord> & {
 
 function Pair({ top, bottom, width }: { top: string; bottom: string; width: number }) {
   return (
-    <div className="flex shrink-0 flex-col items-start gap-0.5 overflow-clip whitespace-nowrap" style={{ width }}>
+    <div className="relative flex shrink-0 flex-col items-start gap-0.5 overflow-clip whitespace-nowrap" style={{ width }}>
       <p className={`font-semibold text-(--text-primary) ${TEXT.labelLarge}`}>{top}</p>
       <p className={`font-medium text-(--text-tertiary) ${TEXT.labelSmall}`}>{bottom}</p>
     </div>
@@ -50,20 +50,24 @@ export function FaultListRow({ selected = false, onSelect, ...rest }: FaultListR
       type="button"
       aria-pressed={selected}
       onClick={onSelect}
-      className={`flex h-[60px] w-[1100px] cursor-pointer items-center gap-4 rounded-[14px] border px-4 text-left transition-[background,border-color,box-shadow] duration-300 ${
+      // 버튼과 같은 0.12초 눌림 전환을 쓰되 넓은 행이라 줄어드는 정도는 0.99 로 지정
+      className={`group relative flex h-[60px] w-[1100px] cursor-pointer items-center gap-4 rounded-[14px] border px-4 text-left transition-[scale,translate,border-color,background-color] duration-[120ms,120ms,300ms,300ms] ease-out active:scale-[0.99] ${
         selected ? "border-(--accent-cyan)/50" : "border-(--white)/5 bg-(--neutral-card) hover:border-(--white)/12 hover:bg-(--white)/5"
       }`}
-      style={
-        selected
-          ? {
-              backgroundImage: `linear-gradient(to right, ${tint("--accent-cyan", 14)}, ${tint("--accent-violet", 5)})`,
-              filter: `drop-shadow(0 0 8px ${tint("--accent-cyan", 20)})`,
-            }
-          : undefined
-      }
     >
-      <GradeChip grade={f.grade} />
-      <div className="flex min-w-px flex-1 flex-col items-start gap-0.5 overflow-clip font-medium whitespace-nowrap">
+      {/* 선택 배경과 빛은 서서히 나타나도록 겹쳐 표시 */}
+      <span
+        aria-hidden
+        className={`pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-300 ${selected ? "opacity-100" : "opacity-0"}`}
+        style={{
+          backgroundImage: `linear-gradient(to right, ${tint("--accent-cyan", 14)}, ${tint("--accent-violet", 5)})`,
+          boxShadow: `0 0 8px 0 ${tint("--accent-cyan", 20)}`,
+        }}
+      />
+      <span className="relative">
+        <GradeChip grade={f.grade} />
+      </span>
+      <div className="relative flex min-w-px flex-1 flex-col items-start gap-0.5 overflow-clip font-medium whitespace-nowrap">
         <p className={`w-full truncate text-(--text-primary) ${TEXT.bodyMedium}`}>{f.title}</p>
         <p className={`w-full truncate text-(--text-tertiary) ${TEXT.labelSmall}`}>{f.desc}</p>
       </div>
