@@ -4,6 +4,7 @@ import { useState } from "react";
 import { IsoPrism, IsoView, isoHeight, isoSide, screenToIso } from "@/components/three/iso";
 import { useAnimatedList } from "@/components/monitoring/live";
 import { tint } from "@/lib/tone";
+import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { TEXT } from "@/lib/typography";
 
 // Figma 크기·큐브 간격·바닥 중심 y·건수 1 당 높이(px) 지정
@@ -34,12 +35,13 @@ type Percentile3DProps = {
 export function Percentile3D({ data = DEFAULT_DATA, selected: initial = "99.6", onSelect }: Percentile3DProps) {
   const [selected, setSelected] = useState(initial);
   const shown = useAnimatedList(data.map((d) => d.count * PX_PER), 1200);
+  const { tip, track, show, hide } = useValueTip<number>();
   const pick = (p: string) => {
     setSelected(p);
     onSelect?.(p);
   };
   return (
-    <div className="relative h-[220px] w-[380px]">
+    <div className="relative h-[220px] w-[380px]" onPointerMove={track} onPointerLeave={hide}>
       <div className="absolute top-[150px] left-2.5 h-[70px] w-[360px] rounded-[50%]" style={{ background: `radial-gradient(closest-side, ${tint("--accent-cyan", 30)}, transparent)` }} />
       {data.map((d, i) => {
         const cx = 40 + i * STEP;
@@ -59,6 +61,7 @@ export function Percentile3D({ data = DEFAULT_DATA, selected: initial = "99.6", 
               height={isoHeight(d.count * PX_PER)}
               position={base}
               onClick={() => pick(d.percentile)}
+              onHover={(over) => (over ? show(i) : hide())}
             />
           );
         })}
@@ -86,6 +89,13 @@ export function Percentile3D({ data = DEFAULT_DATA, selected: initial = "99.6", 
           </div>
         );
       })}
+      {tip && (
+        <ValueTip
+          at={tip}
+          label={`백분위 ${data[tip.item].percentile}`}
+          rows={[{ name: "예상 알람", value: data[tip.item].count, unit: "건", color: data[tip.item].percentile === selected ? "var(--status-danger)" : "var(--accent-cyan)" }]}
+        />
+      )}
     </div>
   );
 }

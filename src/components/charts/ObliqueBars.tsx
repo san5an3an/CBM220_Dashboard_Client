@@ -52,9 +52,11 @@ type BarsProps = {
   depth: number;
   // 막대 바닥의 화면 위쪽 기준 y(px) 지정
   baseline: number;
+  // 마우스를 올린 막대 순서(벗어나면 null) 알림 지정
+  onHover?: (index: number | null) => void;
 };
 
-function Bars({ bars, front, depth, baseline }: BarsProps) {
+function Bars({ bars, front, depth, baseline, onHover }: BarsProps) {
   const tokens = useMemo(() => [...new Set(bars.map((b) => b.token))], [bars]);
   const geos = useMemo(() => Object.fromEntries(tokens.map((t) => [t, barGeometry(t)])), [tokens]);
   const meshes = useRef<(Mesh | null)[]>([]);
@@ -77,7 +79,16 @@ function Bars({ bars, front, depth, baseline }: BarsProps) {
   return (
     <>
       {bars.map((b, i) => (
-        <mesh key={i} ref={(m) => void (meshes.current[i] = m)} geometry={geos[b.token]}>
+        <mesh
+          key={i}
+          ref={(m) => void (meshes.current[i] = m)}
+          geometry={geos[b.token]}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            onHover?.(i);
+          }}
+          onPointerOut={() => onHover?.(null)}
+        >
           <meshBasicMaterial vertexColors transparent depthWrite={false} />
         </mesh>
       ))}

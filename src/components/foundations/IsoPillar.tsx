@@ -5,7 +5,8 @@ import { useMemo, useRef } from "react";
 import { Color, type Group, type MeshStandardMaterial } from "three";
 import { cssColor } from "@/components/dashboard/consist/three/materials";
 import { ObliqueView } from "@/components/three/ObliqueView";
-import { STATUS, type Status, tint } from "@/lib/tone";
+import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
+import { STATUS, STATUS_NAME, type Status, tint } from "@/lib/tone";
 
 // 정면 폭 22·깊이 10·기본 틀 높이 120 의 Figma 기둥 치수 지정
 const FRONT = 22;
@@ -18,9 +19,11 @@ type IsoPillarProps = {
   value?: number;
   // 기둥 틀 높이(px) 지정
   height?: number;
+  // 마우스를 올리면 수치 말풍선 표시 지정
+  tip?: boolean;
 };
 
-function Pillar({ status, value, height: viewH }: Required<IsoPillarProps>) {
+function Pillar({ status, value, height: viewH }: Required<Omit<IsoPillarProps, "tip">>) {
   const MAX_H = viewH - DEPTH;
   const body = useRef<Group>(null);
   const shine = useRef<MeshStandardMaterial>(null);
@@ -59,9 +62,16 @@ function Pillar({ status, value, height: viewH }: Required<IsoPillarProps>) {
 }
 
 // 운행 상태별 색의 등각 3D 기둥을 목표 높이까지 자라게 표시
-export function IsoPillar({ status, value = 1, height = 120 }: IsoPillarProps) {
+export function IsoPillar({ status, value = 1, height = 120, tip: withTip = true }: IsoPillarProps) {
+  const { tip, track, show, hide } = useValueTip<true>();
   return (
-    <div className="relative shrink-0" style={{ width: VIEW_W, height }}>
+    <div
+      className="relative shrink-0"
+      style={{ width: VIEW_W, height }}
+      onPointerEnter={withTip ? (e) => show(true, e) : undefined}
+      onPointerMove={withTip ? track : undefined}
+      onPointerLeave={withTip ? hide : undefined}
+    >
       {/* 기둥 아래로 번지는 상태 색 그림자 표시 */}
       <div
         aria-hidden
@@ -71,6 +81,7 @@ export function IsoPillar({ status, value = 1, height = 120 }: IsoPillarProps) {
       <ObliqueView width={VIEW_W} height={height} className="absolute! inset-0">
         <Pillar status={status} value={value} height={height} />
       </ObliqueView>
+      <ValueTip at={tip} label={STATUS_NAME[status]} rows={[{ name: "비율", value: Math.round(Math.max(0, Math.min(1, value)) * 100), unit: "%", color: `var(${STATUS[status]})` }]} />
     </div>
   );
 }

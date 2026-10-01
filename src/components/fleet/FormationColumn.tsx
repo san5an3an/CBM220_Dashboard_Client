@@ -1,6 +1,7 @@
 "use client";
 
 import { IsoPillar } from "@/components/foundations/IsoPillar";
+import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { useAnimatedNumber } from "@/lib/motion";
 import { STATUS } from "@/lib/tone";
 import { TEXT } from "@/lib/typography";
@@ -29,16 +30,24 @@ export function FormationColumn({ id, level, status = "run" }: FormationColumnPr
   const countColor = alert ? `var(${token})` : n === 0 || status === "end" ? "var(--text-tertiary)" : "var(--text-primary)";
   const labelColor = alert || status === "end" ? `var(${token})` : "var(--text-tertiary)";
   const pillar = LEVEL_PX + LEVEL_PX * n;
+  const { tip, track, show, hide } = useValueTip<true>();
   return (
-    <div className="flex w-10 shrink-0 flex-col items-center gap-1.5" style={{ height: TEXT_H + pillar }}>
+    <div
+      className="flex w-10 shrink-0 flex-col items-center gap-1.5"
+      style={{ height: TEXT_H + pillar }}
+      onPointerEnter={(e) => show(true, e)}
+      onPointerMove={track}
+      onPointerLeave={hide}
+    >
       <p className={`font-semibold whitespace-nowrap tabular-nums ${TEXT.labelLarge}`} style={{ color: countColor }}>
         {String(shown).padStart(2, "0")}
       </p>
-      <IsoPillar status={status} height={pillar} />
+      <IsoPillar status={status} height={pillar} tip={false} />
       <p className={`font-bold whitespace-nowrap text-(--text-primary) ${TEXT.titleSmall}`}>{id}</p>
       <p className={`font-medium whitespace-nowrap ${TEXT.labelSmall}`} style={{ color: labelColor }}>
         {LABEL[status]}
       </p>
+      <ValueTip at={tip} label={`${id} 편성 · ${LABEL[status]}`} rows={[{ name: "고장 건수", value: n, unit: "건", color: `var(${token})` }]} />
     </div>
   );
 }

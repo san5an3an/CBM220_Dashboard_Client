@@ -1,6 +1,7 @@
 "use client";
 
 import { useAnimatedList } from "@/components/monitoring/live";
+import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { TEXT } from "@/lib/typography";
 import { ObliqueBars } from "./ObliqueBars";
 
@@ -34,10 +35,11 @@ export function Coverage3D({ data = DEFAULT_DATA }: Coverage3DProps) {
   const heights = data.map((d) => (d.value == null ? MISSING_H : (d.value / 100) * FULL));
   const shown = useAnimatedList(heights, 1200);
   const bars = data.map((d, i) => ({ x: 10 + i * STEP, height: heights[i], token: d.value == null ? "--status-warning" : "--accent-violet" }));
+  const { tip, track, show, hide } = useValueTip<number>();
   return (
-    <div className="relative h-[190px] w-[360px]">
+    <div className="relative h-[190px] w-[360px]" onPointerMove={track} onPointerLeave={hide}>
       <div className="absolute top-[168px] left-0 h-px w-[360px] bg-(--chart-axis)" />
-      <ObliqueBars width={360} height={190} bars={bars} front={FRONT} depth={DEPTH} baseline={BASE} />
+      <ObliqueBars width={360} height={190} bars={bars} front={FRONT} depth={DEPTH} baseline={BASE} onHover={(i) => (i === null ? hide() : show(i))} />
       {data.map((d, i) => (
         <div key={d.label}>
           {d.value != null && (
@@ -50,6 +52,17 @@ export function Coverage3D({ data = DEFAULT_DATA }: Coverage3DProps) {
           </p>
         </div>
       ))}
+      {tip && (
+        <ValueTip
+          at={tip}
+          label={data[tip.item].label}
+          rows={[
+            data[tip.item].value == null
+              ? { name: "적재", value: "데이터 없음", color: "var(--status-warning)" }
+              : { name: "적재율", value: data[tip.item].value ?? 0, unit: "%", color: "var(--accent-violet)" },
+          ]}
+        />
+      )}
     </div>
   );
 }

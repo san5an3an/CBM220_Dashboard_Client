@@ -5,6 +5,7 @@ import { Tag } from "@/components/foundations";
 import { clamp, seeded, useInterval } from "@/components/monitoring/live";
 import { type IsoShade, IsoPrism, IsoView, isoHeight, isoSide, isoToScreen, screenToIso } from "@/components/three/iso";
 import { tint } from "@/lib/tone";
+import { ValueTipBox } from "@/components/ui/ValueTip";
 import { TEXT } from "@/lib/typography";
 
 // Figma 크기·바닥 중심 위치·칸 간격·칸 크기·1% 당 높이(px) 지정
@@ -148,12 +149,13 @@ export function IsoHeatmap3D({ formations = ["401", "402", "403", "404", "405", 
         })}
       {hover && (
         <div
-          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-[8px] border border-(--border-strong) bg-(--neutral-popover) px-2 py-1 whitespace-nowrap"
+          className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full"
           style={{ left: anchor(hover[0], hover[1], grid[hover[0]][hover[1]])[0], top: anchor(hover[0], hover[1], grid[hover[0]][hover[1]])[1] - 8 }}
         >
-          <p className={`font-medium text-(--text-primary) ${TEXT.labelSmall}`}>
-            {formations[hover[0]]} · {String(hover[1] + 1).padStart(2, "0")}호차 {grid[hover[0]][hover[1]].toFixed(1)}%
-          </p>
+          <ValueTipBox
+            label={`${formations[hover[0]]} 편성 · ${String(hover[1] + 1).padStart(2, "0")}호차`}
+            rows={[{ name: "이상 비율", value: grid[hover[0]][hover[1]].toFixed(1), unit: "%", color: `var(${heatToken(grid[hover[0]][hover[1]])})` }]}
+          />
         </div>
       )}
     </div>

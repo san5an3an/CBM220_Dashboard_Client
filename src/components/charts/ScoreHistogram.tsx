@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { clamp, seeded, useInterval } from "@/components/monitoring/live";
 import { tint } from "@/lib/tone";
+import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { TEXT } from "@/lib/typography";
 import { dragValue } from "./drag";
 
@@ -86,9 +87,10 @@ export function ScoreHistogram({ variant = "sensitivity", threshold, preview, on
     onPreviewChange?.(r);
   });
   const fmt = (v: number) => v.toFixed(4);
+  const { tip, track, show, hide } = useValueTip<number>();
 
   return (
-    <div data-chart className="relative select-none" style={{ width: L.w, height: L.h }}>
+    <div data-chart className="relative select-none" style={{ width: L.w, height: L.h }} onPointerMove={track} onPointerLeave={hide}>
       {variant === "sensitivity" &&
         Y_TICKS.map((t) => {
           const y = L.base - (plotH * t) / 100;
@@ -129,6 +131,8 @@ export function ScoreHistogram({ variant = "sensitivity", threshold, preview, on
                 : `linear-gradient(to bottom, ${tint("--accent-cyan", 95)}, ${tint("--accent-violet", 35)})`,
               boxShadow: tall ? `0 0 10px 0 ${tint("--accent-cyan", 25)}` : undefined,
             }}
+            onPointerEnter={(e) => show(i, e)}
+            onPointerLeave={hide}
           />
         );
       })}
@@ -200,6 +204,20 @@ export function ScoreHistogram({ variant = "sensitivity", threshold, preview, on
           {t.toFixed(L.digits)}
         </p>
       ))}
+      {tip && (
+        <ValueTip
+          at={tip}
+          label={`이상 점수 ${fmt((tip.item / L.bins) * L.max)} ~ ${fmt(((tip.item + 1) / L.bins) * L.max)}`}
+          rows={[
+            {
+              name: "비율",
+              value: (bins[tip.item] * 100).toFixed(1),
+              unit: "%",
+              color: ((tip.item + 0.5) / L.bins) * L.max >= active ? "var(--status-danger)" : "var(--accent-cyan)",
+            },
+          ]}
+        />
+      )}
     </div>
   );
 }

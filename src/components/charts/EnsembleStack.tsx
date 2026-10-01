@@ -1,6 +1,7 @@
 "use client";
 
 import { type IsoShade, IsoPrism, IsoView, isoHeight, isoSide, screenToIso } from "@/components/three/iso";
+import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { tint } from "@/lib/tone";
 import { TEXT } from "@/lib/typography";
 
@@ -35,13 +36,19 @@ type EnsembleStackProps = {
   variant?: keyof typeof LAYOUT;
   // 판 아래 결과 문구 지정
   caption?: string;
+  // 위 판부터 차례로 모델 이상 점수 지정 (API 연동 전 임시 값)
+  scores?: number[];
 };
 
 // 앙상블 모델을 떠 있는 반투명 등각 판 층으로 쌓아 표시
-export function EnsembleStack({ variant = "stack", caption = "다수결 2 / 3" }: EnsembleStackProps) {
+export function EnsembleStack({ variant = "stack", caption = "다수결 2 / 3", scores = [0.82, 0.64, 0.91] }: EnsembleStackProps) {
   const L = LAYOUT[variant];
+  const { tip, track, show, hide } = useValueTip<number>();
+  // 판 순서를 위에서부터 센 모델 번호로 변환
+  const models = L.plates.length - 1;
+  const order = (i: number) => models - i;
   return (
-    <div className="relative" style={{ width: L.w, height: L.h }}>
+    <div className="relative" style={{ width: L.w, height: L.h }} onPointerMove={track} onPointerLeave={hide}>
       {variant === "stack" && (
         <div className="absolute top-[236px] left-5 h-[90px] w-[300px] rounded-[50%]" style={{ background: `radial-gradient(closest-side, ${tint("--accent-cyan", 45)}, transparent)` }} />
       )}
@@ -57,6 +64,7 @@ export function EnsembleStack({ variant = "stack", caption = "다수결 2 / 3" }
             position={screenToIso(p.cx - L.w / 2, p.cy + p.thick - L.h / 2)}
             bob={i === 0 ? 0 : 2.5}
             phase={i * 0.9}
+            onHover={(over) => (over ? show(i) : hide())}
           />
         ))}
       </IsoView>
@@ -73,6 +81,16 @@ export function EnsembleStack({ variant = "stack", caption = "다수결 2 / 3" }
       {variant === "stack" && (
         <p className={`absolute top-[252px] left-[170px] -translate-x-1/2 font-medium whitespace-nowrap text-(--text-primary) ${TEXT.bodyMedium}`}>{caption}</p>
       )}
+      {tip &&
+        (variant === "stack" && tip.item === 0 ? (
+          <ValueTip at={tip} label="앙상블 결과" rows={[{ value: caption, color: `var(${L.plates[0].token})` }]} />
+        ) : (
+          <ValueTip
+            at={tip}
+            label={L.plates[tip.item].label || `모델 ${order(tip.item) + 1}`}
+            rows={[{ name: "이상 점수", value: (scores[order(tip.item)] ?? 0).toFixed(2), color: `var(${L.plates[tip.item].token})` }]}
+          />
+        ))}
     </div>
   );
 }

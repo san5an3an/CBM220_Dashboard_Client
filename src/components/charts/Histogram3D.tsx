@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { clamp, seeded, useInterval } from "@/components/monitoring/live";
 import { Tag } from "@/components/foundations";
+import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { TEXT } from "@/lib/typography";
 import { dragValue } from "./drag";
 import { ObliqueBars } from "./ObliqueBars";
@@ -69,6 +70,7 @@ export function Histogram3D({ variant = "result", threshold = 0.5277, next = 0.6
     if (live) setData((d) => d.map((v) => Math.round(clamp(v + (Math.random() - 0.5) * Math.max(2, v * 0.15), 1, 55))));
   }, LIVE_MS);
 
+  const { tip, track, show, hide } = useValueTip<number>();
   const plotH = L.base - L.top;
   const x = (v: number) => L.left + v * L.width;
   const bars = data.map((v, i) => {
@@ -87,7 +89,7 @@ export function Histogram3D({ variant = "result", threshold = 0.5277, next = 0.6
   });
 
   return (
-    <div data-chart className="relative select-none" style={{ width: L.w, height: L.h }}>
+    <div data-chart className="relative select-none" style={{ width: L.w, height: L.h }} onPointerMove={track} onPointerLeave={hide}>
       {Y_TICKS.map((t) => {
         const y = L.base - (t / 55) * plotH;
         return (
@@ -99,7 +101,7 @@ export function Histogram3D({ variant = "result", threshold = 0.5277, next = 0.6
           </div>
         );
       })}
-      <ObliqueBars width={L.w} height={L.h} bars={bars} front={L.front} depth={L.depth} baseline={L.base} />
+      <ObliqueBars width={L.w} height={L.h} bars={bars} front={L.front} depth={L.depth} baseline={L.base} onHover={(i) => (i === null ? hide() : show(i))} />
       <div
         className="absolute w-0 border-l-[1.5px] border-(--status-warning)"
         style={{
@@ -151,6 +153,13 @@ export function Histogram3D({ variant = "result", threshold = 0.5277, next = 0.6
           {t === 0 ? "0.0" : t === 1 ? "1.0" : t.toFixed(2)}
         </p>
       ))}
+      {tip && (
+        <ValueTip
+          at={tip}
+          label={`이상 점수 ${(tip.item / L.bars).toFixed(2)} ~ ${((tip.item + 1) / L.bars).toFixed(2)}`}
+          rows={[{ name: "건수", value: data[tip.item], unit: "건", color: `var(${bars[tip.item].token})` }]}
+        />
+      )}
     </div>
   );
 }
