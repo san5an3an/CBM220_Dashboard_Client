@@ -22,6 +22,9 @@ export const STATUS = {
 
 export type Status = keyof typeof STATUS;
 
+// 운행 상태 이름 지정
+export const STATUS_NAME: Record<Status, string> = { run: "운행", inspect: "점검", fault: "고장", base: "기지", end: "종료", normal: "정상" };
+
 // 경보 등급을 색 토큰 CSS 변수로 연결
 export const GRADE = {
   A: "--grade-a",

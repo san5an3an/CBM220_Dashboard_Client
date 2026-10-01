@@ -1,11 +1,12 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
+import { type ThreeEvent, useFrame } from "@react-three/fiber";
 import { useMemo, useRef, useState } from "react";
 import { BoxGeometry, BufferAttribute, Color, type Mesh } from "three";
 import { cssColor } from "@/components/dashboard/consist/three/materials";
 import { ObliqueView } from "@/components/three/ObliqueView";
-import { STATUS, type Status, tint } from "@/lib/tone";
+import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
+import { STATUS, STATUS_NAME, type Status, tint } from "@/lib/tone";
 import { clamp, useInterval } from "./live";
 
 // Figma 막대 전체 폭·앞면 높이·두께와 구간 순서 지정
@@ -35,7 +36,7 @@ function toneBox(token: string) {
   return g;
 }
 
-function Bars({ values }: { values: number[] }) {
+function Bars({ values, onHover }: { values: number[]; onHover: (i: number | null, e?: ThreeEvent<PointerEvent>) => void }) {
   const meshes = useRef<(Mesh | null)[]>([]);
   const widths = useRef(values.map(() => 0));
   const geos = useMemo(() => ORDER.map((s) => toneBox(STATUS[s])), []);
@@ -60,7 +61,16 @@ function Bars({ values }: { values: number[] }) {
   return (
     <>
       {geos.map((g, i) => (
-        <mesh key={ORDER[i]} ref={(m) => void (meshes.current[i] = m)} geometry={g}>
+        <mesh
+          key={ORDER[i]}
+          ref={(m) => void (meshes.current[i] = m)}
+          geometry={g}
+          onPointerOver={(e) => {
+            e.stopPropagation();
+            onHover(i, e);
+          }}
+          onPointerOut={() => onHover(null)}
+        >
           <meshBasicMaterial vertexColors />
         </mesh>
       ))}
@@ -90,11 +100,22 @@ export function StackedBar3D({ values = [227.7, 53.1, 27.3, 13.7, 10, 10], live 
     setData((d) => d.map((v, i) => (i < 4 ? clamp(v + (Math.random() - 0.5) * v * 0.25, 4, 400) : v)));
   }, LIVE_MS);
 
+  const { tip, track, show, hide } = useValueTip<number>();
+  const total = data.reduce((a, b) => a + b, 0) || 1;
   return (
-    <div className="relative" style={{ width: VIEW_W, height: VIEW_H, filter: `drop-shadow(0 10px 10px ${tint("--accent-cyan", 18)})` }}>
-      <ObliqueView width={VIEW_W} height={VIEW_H} className="absolute! inset-0">
-        <Bars values={data} />
-      </ObliqueView>
+    <div className="relative" style={{ width: VIEW_W, height: VIEW_H }} onPointerMove={track} onPointerLeave={hide}>
+      <div className="absolute inset-0" style={{ filter: `drop-shadow(0 10px 10px ${tint("--accent-cyan", 18)})` }}>
+        <ObliqueView width={VIEW_W} height={VIEW_H} className="absolute! inset-0">
+          <Bars values={data} onHover={(i, e) => (i === null ? hide() : show(i, e?.nativeEvent))} />
+        </ObliqueView>
+      </div>
+      {tip && (
+        <ValueTip
+          at={tip}
+          label={STATUS_NAME[ORDER[tip.item]]}
+          rows={[{ name: "비율", value: ((data[tip.item] / total) * 100).toFixed(1), unit: "%", color: `var(${STATUS[ORDER[tip.item]]})` }]}
+        />
+      )}
     </div>
   );
 }

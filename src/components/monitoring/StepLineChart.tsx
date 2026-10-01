@@ -54,7 +54,7 @@ function Tip({ active, payload, unit }: { active?: boolean; payload?: readonly {
       style={{ boxShadow: `0 6px 16px 0 ${tint("--status-success", 35)}` }}
     >
       <p className={`font-medium text-(--text-secondary) tabular-nums ${TEXT.labelSmall}`}>{clock(p.t)}</p>
-      <p className={`font-bold text-(--status-success) tabular-nums ${TEXT.titleSmall}`}>
+      <p className="text-[1.125rem] leading-6 font-bold text-(--status-success) tabular-nums">
         {p.v.toFixed(3)} {unit}
       </p>
     </div>

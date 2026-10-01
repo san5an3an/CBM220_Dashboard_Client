@@ -3,6 +3,7 @@
 import { useId } from "react";
 import { useAnimatedNumber } from "@/lib/motion";
 import { tint } from "@/lib/tone";
+import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { TEXT } from "@/lib/typography";
 
 const RING_TONE = {
@@ -25,8 +26,9 @@ export function ProgressRing({ label, value, sub, tone = "cyan" }: ProgressRingP
   const t = RING_TONE[tone];
   const gradientId = useId();
   const shown = useAnimatedNumber(Math.min(100, Math.max(0, value)));
+  const { tip, track, show, hide } = useValueTip<true>();
   return (
-    <div className="relative size-[150px]">
+    <div className="relative size-[150px]" onPointerEnter={(e) => show(true, e)} onPointerMove={track} onPointerLeave={hide}>
       <div className="absolute inset-0 rounded-full" style={{ background: `radial-gradient(circle, ${tint(t.glow, 22)}, transparent 70%)` }} />
       <div
         className="absolute top-[11px] left-[11px] size-32 rounded-full shadow-[0px_10px_18px_0px_rgba(0,0,0,0.55),inset_0px_1px_0px_0px_rgba(255,255,255,0.12)]"
@@ -65,6 +67,7 @@ export function ProgressRing({ label, value, sub, tone = "cyan" }: ProgressRingP
           </p>
         )}
       </div>
+      <ValueTip at={tip} label={label} rows={[{ value: Math.round(value), unit: "%", color: `var(${t.from})` }]} />
     </div>
   );
 }

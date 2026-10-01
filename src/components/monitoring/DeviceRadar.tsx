@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 import { useAnimatedNumber } from "@/lib/motion";
 import { shade, tint } from "@/lib/tone";
+import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { TEXT } from "@/lib/typography";
 import { polar, useAnimatedList, useInterval } from "./live";
 
@@ -56,6 +57,7 @@ export function DeviceRadar({ devices = DEFAULT_DEVICES, live = true }: DeviceRa
   const [selected, setSelected] = useState(0);
   const lens = useAnimatedList(counts.map(spokeLen), 1400);
   const hubValue = useAnimatedNumber(counts[selected], 800);
+  const { tip, track, show, hide } = useValueTip<number>();
   const step = 360 / devices.length;
 
   useInterval(() => {
@@ -65,7 +67,7 @@ export function DeviceRadar({ devices = DEFAULT_DEVICES, live = true }: DeviceRa
   }, LIVE_MS);
 
   return (
-    <div className="relative size-[720px]">
+    <div className="relative size-[720px]" onPointerMove={track} onPointerLeave={hide}>
       <svg className="absolute inset-0 overflow-visible" viewBox="0 0 720 720" width={720} height={720}>
         <defs>
           <linearGradient id={`${id}-plate`} x1="0" y1="0" x2="0" y2="1">
@@ -109,6 +111,8 @@ export function DeviceRadar({ devices = DEFAULT_DEVICES, live = true }: DeviceRa
               aria-pressed={active}
               className="cursor-pointer outline-none [&:hover_.spoke]:opacity-100 [&:focus-visible_.spoke]:opacity-100"
               onClick={() => setSelected(i)}
+              onPointerEnter={(e) => show(i, e)}
+              onPointerLeave={hide}
               onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelected(i)}
             >
               <line x1={x0} y1={y0} x2={ex} y2={ey} strokeWidth={1} strokeDasharray="2 4" style={{ stroke: tint("--white", active ? 22 : 8) }} />
@@ -149,6 +153,7 @@ export function DeviceRadar({ devices = DEFAULT_DEVICES, live = true }: DeviceRa
           <p className={`font-medium text-(--text-secondary) ${TEXT.labelLarge}`}>건</p>
         </div>
       </div>
+      {tip && <ValueTip at={tip} label={devices[tip.item].name} rows={[{ name: "고장", value: counts[tip.item], unit: "건", color: `var(${spokeToken(counts[tip.item])})` }]} />}
     </div>
   );
 }

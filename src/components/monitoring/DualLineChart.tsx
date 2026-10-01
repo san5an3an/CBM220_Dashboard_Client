@@ -2,7 +2,8 @@
 
 import { useId, useState } from "react";
 import { Area, AreaChart, YAxis } from "recharts";
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { type ChartConfig, ChartContainer, ChartTooltip } from "@/components/ui/chart";
+import { ValueTipBox } from "@/components/ui/ValueTip";
 import { TEXT } from "@/lib/typography";
 import { clamp, seeded, useInterval } from "./live";
 
@@ -65,7 +66,15 @@ export function DualLineChart({ labels = ["00:00", "00:00", "00:00", "00:00", "í
               ))}
             </defs>
             <YAxis hide domain={[0, 100]} />
-            <ChartTooltip cursor={{ stroke: "var(--chart-axis)" }} content={<ChartTooltipContent hideLabel />} />
+            <ChartTooltip
+              cursor={{ stroke: "var(--chart-axis)" }}
+              wrapperStyle={{ zIndex: 30 }}
+              content={({ active, payload }) => {
+                const p = payload?.[0]?.payload as Point | undefined;
+                if (!active || !p) return null;
+                return <ValueTipBox rows={keys.map((k) => ({ name: String(config[k]?.label ?? k), value: p[k], color: `var(--color-${k})` }))} />;
+              }}
+            />
             {keys.map((k) => (
               <Area
                 key={k}

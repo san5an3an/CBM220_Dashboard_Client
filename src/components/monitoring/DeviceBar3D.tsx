@@ -2,6 +2,7 @@
 
 import { useAnimatedNumber } from "@/lib/motion";
 import { tint } from "@/lib/tone";
+import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { TEXT } from "@/lib/typography";
 
 type DeviceBar3DProps = {
@@ -14,13 +15,14 @@ type DeviceBar3DProps = {
 // 결함 장치 순위·이름·비율을 윗면 광택이 있는 입체 막대로 표시
 export function DeviceBar3D({ rank, name, percent }: DeviceBar3DProps) {
   const shown = useAnimatedNumber(Math.max(0, Math.min(100, percent)), 1200);
+  const { tip, track, show, hide } = useValueTip<true>();
   return (
-    <div className="flex w-[340px] items-center gap-2.5">
+    <div className="relative flex w-[340px] items-center gap-2.5" onPointerMove={track} onPointerLeave={hide}>
       <span className="flex size-5 shrink-0 items-center justify-center overflow-clip rounded-[6px] border border-(--white)/8 bg-(--white)/7">
         <span className={`font-semibold text-(--accent-cyan) ${TEXT.labelSmall}`}>{rank}</span>
       </span>
       <p className={`w-32 shrink-0 truncate text-(--text-primary) ${TEXT.bodyMedium}`}>{name}</p>
-      <div className="relative h-3.5 min-w-px flex-1 overflow-clip rounded-[7px] bg-(--white)/5">
+      <div className="relative h-3.5 min-w-px flex-1 overflow-clip rounded-[7px] bg-(--white)/5" onPointerEnter={(e) => show(true, e)}>
         <div
           className="relative h-full overflow-hidden rounded-[7px]"
           style={{ width: `${shown}%`, boxShadow: `0 0 10px 0 ${tint("--accent-cyan", 50)}` }}
@@ -32,6 +34,7 @@ export function DeviceBar3D({ rank, name, percent }: DeviceBar3DProps) {
         <span className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0px_2px_3px_0px_rgba(0,0,0,0.6)]" />
       </div>
       <p className={`w-9 shrink-0 text-right font-semibold text-(--text-primary) tabular-nums ${TEXT.labelLarge}`}>{Math.round(shown)}%</p>
+      <ValueTip at={tip} label={name} rows={[{ name: "결함 비율", value: Math.round(percent), unit: "%", color: "var(--accent-cyan)" }]} />
     </div>
   );
 }

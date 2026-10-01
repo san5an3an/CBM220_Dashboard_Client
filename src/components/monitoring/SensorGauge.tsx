@@ -3,6 +3,7 @@
 import { useId } from "react";
 import { useAnimatedNumber } from "@/lib/motion";
 import { shade, TONE, type Tone, tint } from "@/lib/tone";
+import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { TEXT } from "@/lib/typography";
 import { arcPath } from "./live";
 
@@ -32,8 +33,12 @@ export function SensorGauge({ label, value, unit, min = 0, max = 100, sub, tag, 
   const shown = useAnimatedNumber(value, 1200);
   const ratio = Math.max(0, Math.min(1, (shown - min) / (max - min || 1)));
   const text = shown.toFixed(digits);
+  const { tip, track, show, hide } = useValueTip<true>();
   return (
-    <div className="relative flex h-[132px] w-[360px] items-center gap-4 overflow-clip rounded-[18px] border border-(--border-default) pr-[18px] pl-4 shadow-[0px_10px_20px_0px_rgba(0,0,0,0.4)]">
+    <div
+      className="relative flex h-[132px] w-[360px] items-center gap-4 overflow-clip rounded-[18px] border border-(--border-default) pr-[18px] pl-4 shadow-[0px_10px_20px_0px_rgba(0,0,0,0.4)]"
+      onPointerEnter={(e) => show(true, e)} onPointerMove={track} onPointerLeave={hide}
+    >
       <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[18px] bg-linear-[159.9deg] from-(--navy-700) to-(--navy-800)" />
       <div aria-hidden className="pointer-events-none absolute top-[-11px] left-[-21px] size-[140px] rounded-full blur-[25px]" style={{ background: tint(token, 22) }} />
       <div className="relative h-[100px] w-28 shrink-0">
@@ -89,6 +94,7 @@ export function SensorGauge({ label, value, unit, min = 0, max = 100, sub, tag, 
         {sub && <p className={`font-medium whitespace-nowrap text-(--text-tertiary) ${TEXT.labelSmall}`}>{sub}</p>}
       </div>
       <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0px_1px_0px_0px_rgba(255,255,255,0.08)]" />
+      <ValueTip at={tip} label={label} rows={[{ value: value.toFixed(digits), unit, color: `var(${token})` }, { name: "범위", value: `${min} – ${max}`, unit }]} />
     </div>
   );
 }

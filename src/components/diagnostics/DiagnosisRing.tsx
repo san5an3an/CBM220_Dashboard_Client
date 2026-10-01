@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 import { arcPath } from "@/components/monitoring/live";
 import { useAnimatedNumber } from "@/lib/motion";
 import { tint } from "@/lib/tone";
+import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { TEXT } from "@/lib/typography";
 
 // 바깥 링 가운데 반지름 30.6·굵기 6.8, 안쪽 링 21.84·4.32 의 Figma 링 치수 지정
@@ -29,8 +30,9 @@ export function DiagnosisRing({ formation = "4401", date = "2026-05-12 00:00:00"
   const q = useAnimatedNumber(Math.max(0, Math.min(1, collect)), 1400);
   const powerToken = power ? "--status-success" : "--status-danger";
   const gradId = `diag-${formation}`;
+  const { tip, track, show, hide } = useValueTip<true>();
   return (
-    <div className="relative flex h-[92px] w-[480px] items-center gap-4 rounded-[18px] border border-(--border-default) pr-[18px] pl-3.5">
+    <div className="relative flex h-[92px] w-[480px] items-center gap-4 rounded-[18px] border border-(--border-default) pr-[18px] pl-3.5" onPointerEnter={(e) => show(true, e)} onPointerMove={track} onPointerLeave={hide}>
       <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[18px] bg-linear-to-r from-(--white)/5 to-(--white)/2" />
       <div className="relative size-[68px] shrink-0">
         <svg width={68} height={68} className="overflow-visible">
@@ -86,6 +88,14 @@ export function DiagnosisRing({ formation = "4401", date = "2026-05-12 00:00:00"
         <p className={`font-semibold whitespace-nowrap text-(--status-success) ${TEXT.labelSmall}`}>{status}</p>
       </span>
       <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0px_1px_0px_0px_rgba(255,255,255,0.06)]" />
+      <ValueTip
+        at={tip}
+        label={`${formation} 편성`}
+        rows={[
+          { name: "진단 진행률", value: Math.round(progress * 100), unit: "%", color: "var(--accent-cyan)" },
+          { name: "데이터 수집률", value: Math.round(collect * 100), unit: "%", color: "var(--accent-violet)" },
+        ]}
+      />
     </div>
   );
 }

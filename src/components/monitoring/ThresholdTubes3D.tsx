@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { shade, tint } from "@/lib/tone";
+import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { TEXT } from "@/lib/typography";
 import { clamp, useInterval } from "./live";
 
@@ -46,10 +47,11 @@ export function ThresholdTubes3D({
     if (live) setData((d) => d.map((v) => Math.round(clamp(v + (Math.random() - 0.5) * 12, 30, 99))));
   }, LIVE_MS);
 
+  const { tip, track, show, hide } = useValueTip<number>();
   const lineTop = TUBE_TOP + TUBE_H * (1 - threshold / 100);
   const width = GAP * (data.length - 1) + 100;
   return (
-    <div className="relative h-[400px]" style={{ width }}>
+    <div className="relative h-[400px]" style={{ width }} onPointerMove={track} onPointerLeave={hide}>
       <div
         className="absolute top-[342px] left-2.5 h-3.5 rounded-[7px] shadow-[0px_6px_20px_0px_color-mix(in_srgb,var(--accent-cyan)_20%,transparent)]"
         style={{ width: width - 20, backgroundImage: `linear-gradient(to bottom, ${shade("--navy-650", "white", 8)}, var(--navy-800))` }}
@@ -64,7 +66,12 @@ export function ThresholdTubes3D({
               className="absolute top-[334px] h-6 w-[70px] rounded-[50%] blur-[6px] transition-colors duration-700"
               style={{ left: left - 15, background: tint(token, 35) }}
             />
-            <div className="absolute overflow-clip rounded-[20px] border border-(--white)/10" style={{ left, top: TUBE_TOP, width: TUBE_W, height: TUBE_H }}>
+            <div
+              className="absolute overflow-clip rounded-[20px] border border-(--white)/10"
+              style={{ left, top: TUBE_TOP, width: TUBE_W, height: TUBE_H }}
+              onPointerEnter={(e) => show(i, e)}
+              onPointerLeave={hide}
+            >
               <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[20px] bg-linear-to-r from-(--white)/6 via-(--white)/2 to-(--white)/7" />
               <div
                 className="absolute right-[-1px] bottom-[-1px] left-[-1px] rounded-[20px] transition-[height] duration-1000 ease-out"
@@ -101,6 +108,13 @@ export function ThresholdTubes3D({
       <div className="absolute left-0 flex items-start overflow-clip rounded-full border border-(--status-danger)/60 bg-(--status-danger)/20 px-2 py-0.5" style={{ top: lineTop - 26 }}>
         <p className={`font-semibold whitespace-nowrap text-(--status-danger) ${TEXT.labelSmall}`}>기준 {threshold}%</p>
       </div>
+      {tip && (
+        <ValueTip
+          at={tip}
+          label={labels[tip.item]}
+          rows={[{ name: "비율", value: data[tip.item], unit: "%", color: data[tip.item] >= threshold ? "var(--status-danger)" : "var(--accent-cyan)" }]}
+        />
+      )}
     </div>
   );
 }

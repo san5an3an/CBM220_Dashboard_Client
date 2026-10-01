@@ -3,7 +3,8 @@
 import { useId, useState } from "react";
 import { Area, AreaChart, YAxis } from "recharts";
 import { Badge } from "@/components/foundations";
-import { type ChartConfig, ChartContainer } from "@/components/ui/chart";
+import { type ChartConfig, ChartContainer, ChartTooltip } from "@/components/ui/chart";
+import { ValueTipBox } from "@/components/ui/ValueTip";
 import { tint } from "@/lib/tone";
 import { TEXT } from "@/lib/typography";
 import { clamp, seeded, useInterval } from "./live";
@@ -67,6 +68,19 @@ export function TrendAreaChart({ labels = ["00시", "06시", "12시", "18시", "
               </linearGradient>
             </defs>
             <YAxis hide domain={DOMAIN} />
+            <ChartTooltip
+              cursor={{ stroke: "var(--chart-axis)" }}
+              wrapperStyle={{ zIndex: 30 }}
+              isAnimationActive={false}
+              content={({ active, payload }) => {
+                const p = payload?.[0]?.payload as Point | undefined;
+                if (!active || !p) return null;
+                const idx = data.indexOf(p);
+                // 점 순서를 0시부터 1시간 단위 시각으로 바꾸고 마지막 점은 현재로 표시
+                const label = idx === POINTS - 1 ? "현재" : `${String(idx).padStart(2, "0")}시`;
+                return <ValueTipBox label={label} rows={[{ name: CONFIG.count.label, value: p.v, unit: "건", color: "var(--accent-violet)" }]} />;
+              }}
+            />
             <Area
               type="monotone"
               dataKey="v"
@@ -74,7 +88,7 @@ export function TrendAreaChart({ labels = ["00시", "06시", "12시", "18시", "
               strokeWidth={2.5}
               fill={`url(#${id}-fill)`}
               dot={false}
-              activeDot={false}
+              activeDot={{ r: 4, strokeWidth: 2, style: { fill: "var(--accent-violet)", stroke: "var(--white)" } }}
               isAnimationActive
               animationDuration={600}
               style={{ filter: "drop-shadow(0 3px 0 color-mix(in srgb, var(--accent-violet) 55%, transparent))" }}
