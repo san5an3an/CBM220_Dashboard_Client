@@ -74,14 +74,14 @@ function across(a: Pt, b: Pt, drop: number): [Pt, Pt] {
   return [a, [a[0] + nx * l, a[1] + ny * l]];
 }
 
-type Tick = (t: number, dt: number) => void;
+export type Tick = (t: number, dt: number) => void;
 const subscribers = new Set<Tick>();
 let frame = 0;
 let last = 0;
 let start = 0;
 
 // 모든 기둥이 한 번의 화면 갱신 주기를 함께 쓰도록 등록 처리
-function subscribe(fn: Tick) {
+export function subscribe(fn: Tick) {
   subscribers.add(fn);
   if (!frame) {
     const loop = (now: number) => {
