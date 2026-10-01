@@ -42,6 +42,9 @@ const DEFAULT_DEVICES: RadarDevice[] = [
 ];
 
 // 건수 구간별 바큇살 색 토큰 계산
+// 건수가 구간을 넘어 색이 바뀔 때 버튼 반전과 같은 0.3초 동안 넘어가도록 지정
+const FADE = "stroke 300ms ease, fill 300ms ease, filter 300ms ease, opacity 150ms ease";
+
 const spokeToken = (count: number) => (count >= 10 ? "--status-danger" : count >= 6 ? "--status-warning" : "--accent-cyan");
 
 type DeviceRadarProps = {
@@ -116,19 +119,19 @@ export function DeviceRadar({ devices = DEFAULT_DEVICES, live = true }: DeviceRa
               onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setSelected(i)}
             >
               <line x1={x0} y1={y0} x2={ex} y2={ey} strokeWidth={1} strokeDasharray="2 4" style={{ stroke: tint("--white", active ? 22 : 8) }} />
-              <line x1={x0} y1={y0 + 5} x2={x1} y2={y1 + 5} strokeWidth={10} strokeLinecap="round" style={{ stroke: shade(token, "black", 55) }} />
+              <line x1={x0} y1={y0 + 5} x2={x1} y2={y1 + 5} strokeWidth={10} strokeLinecap="round" style={{ stroke: shade(token, "black", 55), transition: FADE }} />
               <line
-                className="spoke transition-opacity"
+                className="spoke"
                 x1={x0}
                 y1={y0}
                 x2={x1}
                 y2={y1}
                 strokeWidth={10}
                 strokeLinecap="round"
-                style={{ stroke: `var(${token})`, opacity: active ? 1 : 0.85, filter: `drop-shadow(0 0 ${active ? 10 : 6}px ${tint(token, active ? 80 : 50)})` }}
+                style={{ stroke: `var(${token})`, opacity: active ? 1 : 0.85, filter: `drop-shadow(0 0 ${active ? 10 : 6}px ${tint(token, active ? 80 : 50)})`, transition: FADE }}
               />
               <line x1={x0} y1={y0 - 2} x2={gx} y2={gy - 2} strokeWidth={2} strokeLinecap="round" style={{ stroke: tint("--white", 45) }} />
-              <circle cx={x1} cy={y1} r={active ? 10 : 8} style={{ fill: shade(token, "white", 30), stroke: "var(--white)", strokeWidth: active ? 2 : 0, filter: `drop-shadow(0 0 6px ${tint(token, 80)})` }} />
+              <circle cx={x1} cy={y1} r={active ? 10 : 8} style={{ fill: shade(token, "white", 30), stroke: "var(--white)", strokeWidth: active ? 2 : 0, filter: `drop-shadow(0 0 6px ${tint(token, 80)})`, transition: FADE }} />
               <text x={tx} y={ty} textAnchor="middle" dominantBaseline="middle" className={`font-semibold ${TEXT.labelSmall}`} style={{ fill: "var(--text-primary)" }}>
                 {counts[i]}
               </text>

@@ -53,16 +53,23 @@ export function CountdownRing({ total = 180, remaining = 58, caption = "남음",
   const { tip, track, show, hide } = useValueTip<true>();
   return (
     <div className="relative h-[150px] w-40" role="timer" aria-label={`${mmss(left)} ${expired ? expiredCaption : caption}`} onPointerEnter={(e) => show(true, e)} onPointerMove={track} onPointerLeave={hide}>
-      <div className="absolute top-[104px] left-0 h-[50px] w-40 rounded-[50%]" style={{ background: `radial-gradient(closest-side, ${tint(token, 40)}, transparent)` }} />
+      {/* 만료되면 바닥 빛이 버튼 반전처럼 0.3초 동안 주황에서 빨강으로 넘어가도록 두 층으로 처리 */}
+      {(["--status-warning", "--status-danger"] as const).map((t) => (
+        <div
+          key={t}
+          className="absolute top-[104px] left-0 h-[50px] w-40 rounded-[50%] transition-opacity duration-300 ease-out"
+          style={{ background: `radial-gradient(closest-side, ${tint(t, 40)}, transparent)`, opacity: t === token ? 1 : 0 }}
+        />
+      ))}
       <svg className="absolute inset-0 overflow-visible" viewBox="0 0 160 150" width={160} height={150}>
         <defs>
           <linearGradient id={`${id}-arc`} gradientUnits="userSpaceOnUse" x1="20" y1="0" x2="140" y2="0">
-            <stop offset="0" style={{ stopColor: expired ? "var(--status-danger)" : "var(--status-warning)" }} />
+            <stop offset="0" style={{ stopColor: expired ? "var(--status-danger)" : "var(--status-warning)", transition: "stop-color 300ms ease" }} />
             <stop offset="1" style={{ stopColor: "var(--status-danger)" }} />
           </linearGradient>
           <radialGradient id={`${id}-face`}>
-            <stop offset="0" style={{ stopColor: tint(token, 18) }} />
-            <stop offset="1" style={{ stopColor: tint(token, 2) }} />
+            <stop offset="0" style={{ stopColor: tint(token, 18), transition: "stop-color 300ms ease" }} />
+            <stop offset="1" style={{ stopColor: tint(token, 2), transition: "stop-color 300ms ease" }} />
           </radialGradient>
         </defs>
         <circle cx={CX} cy={CY} r={R} fill="none" strokeWidth={WIDTH} style={{ stroke: tint("--white", 6) }} />
@@ -76,12 +83,12 @@ export function CountdownRing({ total = 180, remaining = 58, caption = "남음",
           strokeDasharray={RING_LEN}
           strokeDashoffset={expired ? RING_LEN - 0.4 : RING_LEN * (1 - ratio)}
           className={urgent ? "animate-[ring-alarm_1s_ease-in-out_infinite]" : ""}
-          style={{ transition: "stroke-dashoffset 900ms linear", filter: `drop-shadow(0 0 7px ${tint(token, 70)})` }}
+          style={{ transition: "stroke-dashoffset 900ms linear, filter 300ms ease", filter: `drop-shadow(0 0 7px ${tint(token, 70)})` }}
         />
         <circle cx={CX} cy={CY} r={46} fill={`url(#${id}-face)`} />
       </svg>
       <p className={`absolute top-8 left-1/2 -translate-x-1/2 font-extrabold whitespace-nowrap text-(--text-primary) tabular-nums ${TEXT.displaySmall}`}>{mmss(left)}</p>
-      <p className={`absolute top-[72px] left-1/2 -translate-x-1/2 font-semibold whitespace-nowrap ${TEXT.labelSmall}`} style={{ color: `var(${token})` }}>
+      <p className={`absolute top-[72px] left-1/2 -translate-x-1/2 font-semibold whitespace-nowrap ${TEXT.labelSmall}`} style={{ color: `var(${token})`, transition: "color 300ms ease" }}>
         {expired ? expiredCaption : caption}
       </p>
       <ValueTip at={tip} label={expired ? expiredCaption : caption} rows={[{ value: mmss(left), color: `var(${token})` }, { name: "전체", value: mmss(total) }]} />

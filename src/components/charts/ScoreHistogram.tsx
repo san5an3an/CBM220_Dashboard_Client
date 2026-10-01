@@ -120,20 +120,30 @@ export function ScoreHistogram({ variant = "sensitivity", threshold, preview, on
         return (
           <div
             key={i}
-            className="absolute rounded-t-[4px] transition-[height,top] duration-700 ease-out"
+            className="absolute rounded-t-[4px]"
             style={{
               left: L.left + 1.5 + i * step,
               width: step - 3,
               top: L.base - b * plotH,
               height: b * plotH,
-              backgroundImage: over
-                ? `linear-gradient(to bottom, var(--status-danger), ${tint("--status-danger", 35)})`
-                : `linear-gradient(to bottom, ${tint("--accent-cyan", 95)}, ${tint("--accent-violet", 35)})`,
-              boxShadow: tall ? `0 0 10px 0 ${tint("--accent-cyan", 25)}` : undefined,
+              boxShadow: tall ? `0 0 10px 0 ${tint("--accent-cyan", 25)}` : `0 0 10px 0 transparent`,
+              transition: "height 700ms ease-out, top 700ms ease-out, box-shadow 300ms ease",
             }}
             onPointerEnter={(e) => show(i, e)}
             onPointerLeave={hide}
-          />
+          >
+            {/* 임계선을 넘나들면 버튼 반전처럼 두 색 층이 0.3초 동안 서로 바뀌도록 처리 */}
+            <div
+              aria-hidden
+              className="absolute inset-0 rounded-[inherit] transition-opacity duration-300 ease-out"
+              style={{ backgroundImage: `linear-gradient(to bottom, ${tint("--accent-cyan", 95)}, ${tint("--accent-violet", 35)})`, opacity: over ? 0 : 1 }}
+            />
+            <div
+              aria-hidden
+              className="absolute inset-0 rounded-[inherit] transition-opacity duration-300 ease-out"
+              style={{ backgroundImage: `linear-gradient(to bottom, var(--status-danger), ${tint("--status-danger", 35)})`, opacity: over ? 1 : 0 }}
+            />
+          </div>
         );
       })}
       {variant === "sensitivity" && (
