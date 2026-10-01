@@ -73,7 +73,7 @@ export function Donut3D({ counts, unit = "건" }: Donut3DProps) {
   return (
     <div className="relative h-[110px] w-[150px]">
       <div aria-hidden className="absolute top-10 left-0 h-[70px] w-[150px] rounded-[50%] bg-[rgba(0,0,0,0.55)] blur-[14px]" />
-      <TiltView width={150} height={110} elevation={ELEVATION} className="absolute! inset-0">
+      <TiltView width={150} height={110} elevation={ELEVATION} className="absolute! inset-0" standalone>
         <Ring fractions={fractions} />
       </TiltView>
       <div className="absolute top-[29px] left-1/2 z-10 flex -translate-x-1/2 items-baseline gap-0.5 whitespace-nowrap">

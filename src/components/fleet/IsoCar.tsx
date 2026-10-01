@@ -73,7 +73,7 @@ function CarPlateTag({ number, state, className = "", style, onClick }: CarPlate
 export function IsoCar({ number = "00", state = "normal", type = "middle", pantograph = false, onSelect }: IsoCarProps) {
   return (
     <div className="relative shrink-0" style={{ width: W, height: H }}>
-      <ConsistView width={W} height={H} origin={ORIGIN} pad={24}>
+      <ConsistView width={W} height={H} origin={ORIGIN} pad={24} standalone>
         <Arriving>
           <TrainCar
             no={number}

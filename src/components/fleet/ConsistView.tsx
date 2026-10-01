@@ -8,6 +8,7 @@ import { AXIS_BACK, AXIS_RIGHT, AXIS_UP, PX_PER_UNIT } from "@/components/dashbo
 import { CabEnvironment } from "@/components/dashboard/consist/three/CabFront";
 import { FACING_CAMERA } from "@/components/dashboard/consist/three/ConsistStage3D";
 import { cssColor } from "@/components/dashboard/consist/three/materials";
+import { OwnCanvas } from "@/components/three/OwnCanvas";
 
 type ConsistViewProps = {
   width: number;
@@ -18,6 +19,8 @@ type ConsistViewProps = {
   pad?: number;
   className?: string;
   style?: CSSProperties;
+  // 공용 캔버스 대신 자기 캔버스에 그리도록 지정
+  standalone?: boolean;
   children: ReactNode;
 };
 
@@ -36,7 +39,7 @@ function Lights() {
 }
 
 // 대시보드 편성 무대와 같은 카메라 축으로 전동차를 비스듬히 보는 3D 창 생성
-export function ConsistView({ width, height, origin, pad = 0, className = "", style, children }: ConsistViewProps) {
+export function ConsistView({ width, height, origin, pad = 0, className = "", style, standalone = false, children }: ConsistViewProps) {
   const w = width + pad * 2;
   const h = height + pad * 2;
   const position = useMemo(
@@ -47,11 +50,24 @@ export function ConsistView({ width, height, origin, pad = 0, className = "", st
         .addScaledVector(AXIS_BACK, 3000),
     [w, h, origin, pad],
   );
-  return (
-    <View className={`absolute! ${className}`} style={{ ...style, width: w, height: h, left: -pad, top: -pad }}>
+  const scene = (
+    <>
       <OrthographicCamera makeDefault zoom={PX_PER_UNIT} position={position} quaternion={FACING_CAMERA} near={1} far={6000} />
       <Lights />
       {children}
+    </>
+  );
+  const frame = { ...style, width: w, height: h, left: -pad, top: -pad };
+  if (standalone) {
+    return (
+      <OwnCanvas className={`absolute! ${className}`} style={frame}>
+        {scene}
+      </OwnCanvas>
+    );
+  }
+  return (
+    <View className={`absolute! ${className}`} style={frame}>
+      {scene}
     </View>
   );
 }
