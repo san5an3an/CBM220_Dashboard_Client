@@ -3,7 +3,6 @@
 import { useId } from "react";
 import { useAnimatedNumber } from "@/lib/motion";
 import { shade, tint } from "@/lib/tone";
-import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { TEXT } from "@/lib/typography";
 import { arcPath, polar } from "./live";
 
@@ -33,9 +32,8 @@ export function HealthGauge({ label, value, target = 90, sub }: HealthGaugeProps
   const tickDeg = START + (SWEEP * target) / 100;
   const [t1x, t1y] = polar(C, C, R - 12, tickDeg);
   const [t2x, t2y] = polar(C, C, R + 13, tickDeg);
-  const { tip, track, show, hide } = useValueTip<true>();
   return (
-    <div className="relative size-[300px]" onPointerEnter={(e) => show(true, e)} onPointerMove={track} onPointerLeave={hide}>
+    <div className="relative size-[300px]">
       <div
         className="absolute inset-0 rounded-full"
         style={{ background: `radial-gradient(closest-side, ${tint("--accent-cyan", 22)}, ${tint("--accent-violet", 8)} 55%, transparent)` }}
@@ -83,7 +81,6 @@ export function HealthGauge({ label, value, target = 90, sub }: HealthGaugeProps
         </div>
         {sub && <p className={`font-medium text-(--status-success) ${TEXT.labelSmall}`}>{sub}</p>}
       </div>
-      <ValueTip at={tip} label={label} rows={[{ name: "현재", value: value.toFixed(1), unit: "%", color: "var(--accent-cyan)" }, { name: "목표", value: target, unit: "%" }]} />
     </div>
   );
 }

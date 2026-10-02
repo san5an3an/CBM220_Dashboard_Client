@@ -2,7 +2,6 @@
 
 import { useEffect, useId, useState } from "react";
 import { tint } from "@/lib/tone";
-import { useValueTip, ValueTip } from "@/components/ui/ValueTip";
 import { TEXT } from "@/lib/typography";
 import { arcPath } from "./live";
 
@@ -50,9 +49,8 @@ export function CountdownRing({ total = 180, remaining = 58, caption = "남음",
   const token = expired ? "--status-danger" : "--status-warning";
   const ratio = Math.max(0, Math.min(1, left / total));
   const urgent = !expired && left <= 10;
-  const { tip, track, show, hide } = useValueTip<true>();
   return (
-    <div className="relative h-[150px] w-40" role="timer" aria-label={`${mmss(left)} ${expired ? expiredCaption : caption}`} onPointerEnter={(e) => show(true, e)} onPointerMove={track} onPointerLeave={hide}>
+    <div className="relative h-[150px] w-40" role="timer" aria-label={`${mmss(left)} ${expired ? expiredCaption : caption}`}>
       {/* 만료되면 바닥 빛이 버튼 반전처럼 0.3초 동안 주황에서 빨강으로 넘어가도록 두 층으로 처리 */}
       {(["--status-warning", "--status-danger"] as const).map((t) => (
         <div
@@ -91,7 +89,6 @@ export function CountdownRing({ total = 180, remaining = 58, caption = "남음",
       <p className={`absolute top-[72px] left-1/2 -translate-x-1/2 font-semibold whitespace-nowrap ${TEXT.labelSmall}`} style={{ color: `var(${token})`, transition: "color 300ms ease" }}>
         {expired ? expiredCaption : caption}
       </p>
-      <ValueTip at={tip} label={expired ? expiredCaption : caption} rows={[{ value: mmss(left), color: `var(${token})` }, { name: "전체", value: mmss(total) }]} />
     </div>
   );
 }
