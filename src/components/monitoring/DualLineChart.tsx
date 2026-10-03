@@ -16,7 +16,8 @@ const DEFAULT_CONFIG = {
 const POINTS = 40;
 const LIVE_MS = 2000;
 
-type Point = { i: number; a: number; b: number };
+export type DualPoint = { i: number; a: number; b: number };
+type Point = DualPoint;
 
 // 두 계열이 서로 다른 박자로 오르내리는 첫 데이터 생성
 function initial(): Point[] {
@@ -39,17 +40,33 @@ function next(prev: Point[]): Point[] {
 type DualLineChartProps = {
   labels?: string[];
   config?: ChartConfig;
+  // 실시간 데이터를 밖에서 넘기면 자체 임시 데이터 대신 표시
+  data?: DualPoint[];
+  domain?: [number, number];
+  // 말풍선 머리 문구를 점 값으로 만들도록 지정
+  tipLabel?: (p: DualPoint) => string;
+  className?: string;
 };
 
 // 두 계열 추이를 선·깊이·영역으로 겹쳐 실시간 표시
-export function DualLineChart({ labels = ["00:00", "00:00", "00:00", "00:00", "현재"], config = DEFAULT_CONFIG }: DualLineChartProps) {
+export function DualLineChart({
+  labels = ["00:00", "00:00", "00:00", "00:00", "현재"],
+  config = DEFAULT_CONFIG,
+  data: given,
+  domain = [0, 100],
+  tipLabel,
+  className = "h-[264px] w-[700px]",
+}: DualLineChartProps) {
   const id = useId().replace(/:/g, "");
-  const [data, setData] = useState(initial);
-  useInterval(() => setData(next), LIVE_MS);
+  const [own, setOwn] = useState(initial);
+  useInterval(() => {
+    if (!given) setOwn(next);
+  }, LIVE_MS);
+  const data = given ?? own;
   const keys = ["a", "b"] as const;
 
   return (
-    <div className="relative h-[264px] w-[700px]">
+    <div className={`relative ${className}`}>
       {["top-0", "top-[22.73%]", "top-[45.45%]", "top-[68.18%]"].map((cls) => (
         <div key={cls} className={`absolute inset-x-0 h-px bg-(--chart-grid) ${cls}`} />
       ))}
@@ -65,14 +82,14 @@ export function DualLineChart({ labels = ["00:00", "00:00", "00:00", "00:00", "�
                 </linearGradient>
               ))}
             </defs>
-            <YAxis hide domain={[0, 100]} />
+            <YAxis hide domain={domain} />
             <ChartTooltip
               cursor={{ stroke: "var(--chart-axis)" }}
               wrapperStyle={{ zIndex: 30 }}
               content={({ active, payload }) => {
                 const p = payload?.[0]?.payload as Point | undefined;
                 if (!active || !p) return null;
-                return <ValueTipBox rows={keys.map((k) => ({ name: String(config[k]?.label ?? k), value: p[k], color: `var(--color-${k})` }))} />;
+                return <ValueTipBox label={tipLabel?.(p)} rows={keys.map((k) => ({ name: String(config[k]?.label ?? k), value: p[k], color: `var(--color-${k})` }))} />;
               }}
             />
             {keys.map((k) => (

@@ -11,8 +11,6 @@ export const INTRO_FADE_MS = 500;
 export const ARRIVAL_MS = 2600;
 // 열차가 멈춘 뒤 카드와 점선이 나타나는 시간 지정
 export const REVEAL_MS = 400;
-// 카드가 나타난 뒤 숫자와 게이지가 차오르는 시간 지정
-export const COUNT_MS = 1400;
 
 export type Arrival = { tick: number; intro: boolean };
 

@@ -3,7 +3,7 @@ export { CountdownRing } from "./CountdownRing";
 export { DeviceBar3D } from "./DeviceBar3D";
 export { DeviceRadar, type RadarDevice } from "./DeviceRadar";
 export { Donut3D } from "./Donut3D";
-export { DualLineChart } from "./DualLineChart";
+export { type DualPoint, DualLineChart } from "./DualLineChart";
 export { GradeRow } from "./GradeRow";
 export { HealthGauge } from "./HealthGauge";
 export { KpiTile } from "./KpiTile";

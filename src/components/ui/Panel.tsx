@@ -28,23 +28,6 @@ export function Panel({ className = "", headerClassName = "gap-4", header, child
   );
 }
 
-type PanelTitleProps = {
-  eyebrow: string;
-  title: string;
-};
-
-export function PanelTitle({ eyebrow, title }: PanelTitleProps) {
-  return (
-    <div className="relative flex shrink-0 items-center gap-3">
-      <div className="h-9 w-1 shrink-0 rounded-[2px] bg-linear-to-b from-(--accent-cyan) to-(--accent-violet) shadow-[0px_0px_8px_0px_var(--accent-cyan-glow)]" />
-      <div className="flex flex-col items-start gap-0.5 whitespace-nowrap">
-        <p className="text-[11px] font-semibold leading-4 tracking-[0.5px] text-(--accent-cyan)">{eyebrow}</p>
-        <p className="text-[16px] font-bold leading-6 tracking-[0.15px] text-(--text-primary)">{title}</p>
-      </div>
-    </div>
-  );
-}
-
 export function Spacer() {
   return <div className="h-px min-w-px flex-[1_0_0]" />;
 }
