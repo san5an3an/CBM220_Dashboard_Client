@@ -90,10 +90,325 @@ body {
   }
 }
 
+/* 살아 있는 상태 점이 숨 쉬듯 빛나도록 지정 */
+@keyframes legend-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 4px var(--pulse);
+  }
+  50% {
+    box-shadow: 0 0 10px 2px var(--pulse);
+  }
+}
+
+/* 오류 문구가 나타날 때 좌우로 짧게 흔들리도록 지정 */
+@keyframes shake {
+  0%,
+  100% {
+    translate: 0;
+  }
+  25% {
+    translate: -3px;
+  }
+  60% {
+    translate: 2px;
+  }
+}
+
+/* 새 로그 줄이 아래에서 밀려 올라오며 나타나도록 지정 */
+@keyframes log-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+/* 강조선이 왼쪽부터 늘어나며 나타나도록 지정 */
+@keyframes grow-x {
+  from {
+    scale: 0 1;
+  }
+}
+
+/* 진행 중인 칩 테두리가 천천히 빛났다 흐려지도록 지정 */
+@keyframes border-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-cyan) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 12px 0 color-mix(in srgb, var(--accent-cyan) 45%, transparent);
+  }
+}
+
+/* 떠 있는 목록·달력이 위에서 살짝 펼쳐지며 나타나도록 지정 */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+    translate: 0 -4px;
+  }
+}
+
+/* 바뀐 내용이 아래에서 살짝 떠오르며 나타나도록 지정 */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+
+/* 경고 아이콘이 천천히 깜빡이도록 지정 */
+@keyframes alert-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* 레일 펼침 창이 왼쪽에서 살짝 밀려 나오도록 지정 */
+@keyframes flyout-in {
+  from {
+    opacity: 0;
+    translate: -6px 0;
+  }
+}
+
+/* 세션 만료가 가까우면 테두리가 호박색으로 빛나도록 지정 */
+@keyframes warn-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-warning) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 12px 0 color-mix(in srgb, var(--status-warning) 45%, transparent);
+  }
+}
+
+/* 새 알림 카드가 오른쪽에서 밀려 들어오도록 지정 */
+@keyframes feed-in {
+  from {
+    opacity: 0;
+    translate: 16px 0;
+  }
+}
+
+/* 알림이 오른쪽에서 튀어 들어오도록 지정 */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    translate: 40px 0;
+    scale: 0.96;
+  }
+}
+
+/* 알림이 오른쪽으로 사라지도록 지정 */
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    translate: 40px 0;
+  }
+}
+
+/* 알림이 닫히기까지 남은 시간 막대가 줄어들도록 지정 */
+@keyframes toast-timer {
+  from {
+    scale: 1 1;
+  }
+  to {
+    scale: 0 1;
+  }
+}
+
+/* 어두운 배경이 서서히 나타나도록 지정 */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* 어두운 배경이 서서히 사라지도록 지정 */
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* 다이얼로그가 살짝 커지며 떠오르도록 지정 */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+    translate: 0 12px;
+  }
+}
+
+/* 다이얼로그가 작아지며 사라지도록 지정 */
+@keyframes dialog-out {
+  to {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+/* 모달 시트가 오른쪽에서 밀려 들어오도록 지정 */
+@keyframes sheet-in {
+  from {
+    translate: 100% 0;
+  }
+}
+
+/* 모달 시트가 오른쪽으로 빠져나가도록 지정 */
+@keyframes sheet-out {
+  to {
+    translate: 100% 0;
+  }
+}
+
+/* 엠블럼 빛줄기가 가볍게 깜빡이도록 지정 */
+@keyframes beam-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 0.55;
+  }
+  55% {
+    opacity: 0.9;
+  }
+}
+
+/* 엠블럼 아이콘 원이 위아래로 떠 있도록 지정 */
+@keyframes holo-pulse {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -3px;
+  }
+}
+
 @keyframes reveal {
   from {
     opacity: 0;
     transform: translateY(6px);
+  }
+}
+
+/* 로딩 뼈대 위로 밝은 띠가 왼쪽에서 오른쪽으로 지나가도록 지정 */
+@keyframes skeleton-shimmer {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 100% 0;
+  }
+}
+
+/* 진행 막대 위 빛이 채워진 끝까지 흘러가도록 지정 */
+@keyframes bar-flow {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 250% 0;
+  }
+}
+
+/* 배너 위로 옅은 빛이 천천히 쓸고 지나가도록 지정 */
+@keyframes banner-sweep {
+  0% {
+    translate: -60% 0;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  60%,
+  100% {
+    translate: 260% 0;
+    opacity: 0;
+  }
+}
+
+/* 위험 배너 테두리 빛이 맥박처럼 커졌다 줄도록 지정 */
+@keyframes danger-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-danger) 0%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 18px 0 color-mix(in srgb, var(--status-danger) 40%, transparent);
+  }
+}
+
+/* 입체 큐브가 제자리에서 한 바퀴씩 돌도록 지정 */
+@keyframes cube-spin {
+  from {
+    transform: rotateX(-30deg) rotateY(45deg);
+  }
+  to {
+    transform: rotateX(-30deg) rotateY(405deg);
+  }
+}
+
+/* 바뀐 값이 살짝 커졌다 돌아오도록 지정 */
+@keyframes value-pop {
+  0% {
+    scale: 1;
+  }
+  40% {
+    scale: 1.12;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+/* 지표 뒤쪽 빛이 천천히 밝아졌다 흐려지도록 지정 */
+@keyframes glow-breathe {
+  0%,
+  100% {
+    opacity: 0.75;
+    scale: 0.92;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.06;
+  }
+}
+
+/* 남은 시간이 얼마 없을 때 링 빛이 깜빡이도록 지정 */
+@keyframes ring-alarm {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* 유리관 속 액체 윗면이 살짝 출렁이도록 지정 */
+@keyframes liquid-wobble {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -2px;
+  }
+}
+
+/* 점선 무늬가 선의 시작에서 끝 방향으로 계속 흐르도록 지정 */
+@keyframes dash-flow {
+  to {
+    stroke-dashoffset: -12;
   }
 }
 
@@ -172,4 +487,69 @@ body {
 .flip-hover:hover::after,
 .group:hover > .flip-hover::after {
   opacity: 1;
+}
+
+/* 상행 열차가 오른쪽에서 역으로 미끄러져 서도록 지정 */
+@keyframes dock-left {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
+/* 하행 열차가 왼쪽에서 역으로 미끄러져 서도록 지정 */
+@keyframes dock-right {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+}
+
+/* 선택한 장치 구슬에서 물결이 퍼져 나가며 사라지도록 지정 */
+@keyframes hotspot-ping {
+  from {
+    opacity: 1;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 1.7;
+  }
+}
+
+/* 장치 구슬 둘레 빛이 천천히 커졌다 작아지도록 지정 */
+@keyframes hotspot-breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+    scale: 0.9;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.08;
+  }
+}
+
+/* 차체가 대차 위에서 살짝 오르내리도록 지정 */
+@keyframes car-sway {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -0.6px;
+  }
+}
+
+/* 다음 단계 화살표가 오른쪽으로 살짝 밀렸다 돌아오며 빛나도록 지정 */
+@keyframes chevron-flow {
+  0%,
+  100% {
+    translate: 0 0;
+    opacity: 0.75;
+  }
+  50% {
+    translate: 3px 0;
+    opacity: 1;
+  }
 }

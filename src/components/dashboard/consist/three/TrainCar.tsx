@@ -84,14 +84,14 @@ function Pantograph() {
   );
 }
 
-function FocusRing() {
+function FocusRing({ always = false }: { always?: boolean }) {
   const ref = useRef<Mesh>(null);
   useFrame(({ clock }) => {
     const m = ref.current;
     if (!m) return;
     // 열차가 멈춘 뒤 링을 키우며 표시하고 이후 숨 쉬듯 반복
     const t = (Math.sin(clock.elapsedTime * 2.4) + 1) / 2;
-    const shown = reveal.value;
+    const shown = always ? 1 : reveal.value;
     m.visible = shown > 0;
     (m.material as MeshBasicMaterial).opacity = (0.55 + t * 0.4) * shown;
     m.scale.setScalar((0.85 + 0.15 * shown) * (1 + t * 0.04));
@@ -129,9 +129,14 @@ function FloorShade({ shadow, underGlow }: FloorShadeProps) {
   );
 }
 
-type TrainCarProps = Car & { x: number; onSelect: () => void };
+type TrainCarProps = Car & {
+  x: number;
+  onSelect: () => void;
+  // 선택 링을 도착 연출과 관계없이 표시
+  ringAlways?: boolean;
+};
 
-export function TrainCar({ x, state, cab, pantograph, onSelect }: TrainCarProps) {
+export function TrainCar({ x, state, cab, pantograph, onSelect, ringAlways = false }: TrainCarProps) {
   const color = cssColor(STATE_TOKEN[state]);
   // 노선 띠는 차량 상태와 관계없이 4호선 노선색으로 지정
   const stripe = stripeMaterial(cssColor("--cyan-400"));
@@ -156,7 +161,7 @@ export function TrainCar({ x, state, cab, pantograph, onSelect }: TrainCarProps)
     >
       {/* 바닥 그림자와 상태 색 반사광 표시 */}
       <FloorShade shadow={shadow} underGlow={underGlow} />
-      {state === "selected" && <FocusRing />}
+      {state === "selected" && <FocusRing always={ringAlways} />}
 
       {/* 대차와 바퀴, 하부 기기 배치 */}
       {BOGIES.map((bx) => (

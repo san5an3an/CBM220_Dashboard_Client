@@ -45,7 +45,7 @@ const RAILS = [
 // 연결선을 화면과 평행한 면에 그려 항상 위에 표시
 const OVERLAY_DEPTH = 1500;
 // 카메라를 정면으로 바라보는 회전값 계산
-const FACING_CAMERA = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(AXIS_RIGHT, AXIS_UP, AXIS_BACK));
+export const FACING_CAMERA = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(AXIS_RIGHT, AXIS_UP, AXIS_BACK));
 // 디자인 픽셀을 월드 단위로 변환
 const px = (v: number) => v / SCENE_SCALE / PX_PER_UNIT;
 
