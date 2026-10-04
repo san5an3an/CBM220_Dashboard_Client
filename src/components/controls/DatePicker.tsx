@@ -193,17 +193,21 @@ export function DatePicker({ today, initial, missing = [], onApply, onCancel }: 
         <Button kind="primary" label="적용" disabled={!end} onClick={() => end && onApply({ start: lo, end: hi, startTime: times.start, endTime: times.end })} />
       </div>
 
+      {/* 화면 끝에서 잘리지 않도록 시간 선택 창을 달력 위에 덮어 가운데 표시 */}
       {editing && (
-        <div className="absolute top-[calc(100%-120px)] left-full z-40 ml-3">
-          <TimePicker
-            title={editing === "start" ? "시작 시간" : "종료 시간"}
-            value={times[editing]}
-            onCancel={() => setEditing(null)}
-            onApply={(v) => {
-              setTimes((t) => ({ ...t, [editing]: v }));
-              setEditing(null);
-            }}
-          />
+        <div className="absolute inset-0 z-40 flex items-center justify-center rounded-[inherit]">
+          <div aria-hidden onClick={() => setEditing(null)} className="absolute inset-0 animate-[fade-in_160ms_ease-out] rounded-[inherit] bg-(--navy-950)/55" />
+          <div className="relative">
+            <TimePicker
+              title={editing === "start" ? "시작 시간" : "종료 시간"}
+              value={times[editing]}
+              onCancel={() => setEditing(null)}
+              onApply={(v) => {
+                setTimes((t) => ({ ...t, [editing]: v }));
+                setEditing(null);
+              }}
+            />
+          </div>
         </div>
       )}
     </div>

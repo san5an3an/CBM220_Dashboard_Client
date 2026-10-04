@@ -27,7 +27,8 @@ type AlarmDetailPanelProps = {
 function Detail({ alarm, onResolve }: { alarm: Alarm; onResolve: (no: number) => void }) {
   const open = OPEN_STATUS.includes(alarm.status);
   return (
-    <div className="flex w-full flex-col gap-2.5">
+    // 패널 높이에 맞춰 카드·차량·상태·버튼을 위아래로 고르게 벌려 배치
+    <div className="flex size-full flex-col justify-between gap-2.5">
       <FaultSummaryCard
         width="100%"
         grade={alarm.grade}
@@ -49,7 +50,7 @@ function Detail({ alarm, onResolve }: { alarm: Alarm; onResolve: (no: number) =>
             {alarm.formation} 편성 · {alarm.car}호차
           </p>
           <p className={`font-medium text-(--text-secondary) ${TEXT.labelMedium}`}>
-            발생 2026-{alarm.date} {alarm.time}
+            발생 {alarm.ymd} {alarm.time}
           </p>
         </div>
       </div>

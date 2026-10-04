@@ -12,6 +12,9 @@ import { type DailyRecord, DEVICES, formatDay, MODELS, PILLAR_STATUS, pillarLeve
 
 export type TimelineFilter = { device: number; model: number; range: number };
 
+// 툴바 조건의 처음 값(장치·모델 전체, 최근 30일) 지정
+export const INITIAL_FILTER: TimelineFilter = { device: 0, model: 0, range: RANGES.length - 1 };
+
 // 기둥 위아래 글자 높이와 단계당 기둥 높이 지정 (FormationColumn 과 같은 값)
 const TEXT_H = 74;
 const LEVEL_PX = 22;
@@ -22,10 +25,10 @@ const TIP_H = 60;
 
 const options = (labels: readonly string[]) => labels.map((label, i) => ({ value: String(i), label }));
 
-type ToolbarProps = { filter: TimelineFilter; onApply: (f: TimelineFilter) => void; onRefresh: () => void };
+type ToolbarProps = { filter: TimelineFilter; onApply: (f: TimelineFilter) => void };
 
 // 장치·모델·기간을 고른 뒤 조회를 누르면 적용하는 툴바 표시
-function Toolbar({ filter, onApply, onRefresh }: ToolbarProps) {
+function Toolbar({ filter, onApply }: ToolbarProps) {
   const [pending, setPending] = useState(filter);
   const pick = (key: keyof TimelineFilter) => (v: string) => setPending((p) => ({ ...p, [key]: Number(v) }));
   return (
@@ -33,7 +36,14 @@ function Toolbar({ filter, onApply, onRefresh }: ToolbarProps) {
       <Select options={options(DEVICES)} value={String(pending.device)} onChange={pick("device")} />
       <Select options={options(MODELS)} value={String(pending.model)} onChange={pick("model")} />
       <Select options={options(RANGES.map((r) => r.label))} value={String(pending.range)} onChange={pick("range")} />
-      <SquareButton label="새로고침" onClick={onRefresh} />
+      <SquareButton
+        label="검색 조건 초기화"
+        // 장치·모델·기간을 처음 값으로 되돌리고 바로 다시 조회
+        onClick={() => {
+          setPending(INITIAL_FILTER);
+          onApply(INITIAL_FILTER);
+        }}
+      />
       <Button label="조회" icon={Search} onClick={() => onApply(pending)} />
     </div>
   );
@@ -63,7 +73,6 @@ type DailyTrendPanelProps = {
 };
 
 export function DailyTrendPanel({ records, filter, onApply }: DailyTrendPanelProps) {
-  const [tick, setTick] = useState(0);
   // 처음에는 가장 최근 위험 날을 가리키도록 지정
   const latestDanger = records.findLastIndex((r) => r.status === "위험");
   const [hovered, setHovered] = useState<number | null>(null);
@@ -77,7 +86,7 @@ export function DailyTrendPanel({ records, filter, onApply }: DailyTrendPanelPro
         <>
           <PanelHeader eyebrow="DAILY TREND" title={`일별 평균 이상비율 · ${RANGES[filter.range].label}`} />
           <Spacer />
-          <Toolbar filter={filter} onApply={onApply} onRefresh={() => setTick((t) => t + 1)} />
+          <Toolbar filter={filter} onApply={onApply} />
         </>
       }
     >
@@ -91,7 +100,7 @@ export function DailyTrendPanel({ records, filter, onApply }: DailyTrendPanelPro
             기둥 높이 = 그날의 평균 이상비율 · 색 = 상태 (주의·경고 / 위험 ≥ 20%)
           </p>
         </div>
-        <div key={tick} className="relative flex min-h-px w-full flex-[1_0_0] items-end" style={{ paddingBottom: CHART_PAD_B }} onPointerLeave={() => setHovered(null)}>
+        <div className="relative flex min-h-px w-full flex-[1_0_0] items-end" style={{ paddingBottom: CHART_PAD_B }} onPointerLeave={() => setHovered(null)}>
           {records.map((r, i) => {
             const level = pillarLevel(r.avg);
             const height = TEXT_H + LEVEL_PX + LEVEL_PX * level;

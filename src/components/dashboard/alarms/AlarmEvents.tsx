@@ -3,25 +3,31 @@
 import { useMemo, useState } from "react";
 import type { Grade } from "@/lib/tone";
 import { DashboardShell } from "../DashboardShell";
+import { inDateTimeRange } from "../DateRangeField";
 import { AlarmDetailPanel } from "./AlarmDetailPanel";
-import { type AlarmQuery, AlarmFlowPanel } from "./AlarmFlowPanel";
+import { type AlarmQuery, AlarmFlowPanel, INITIAL_QUERY } from "./AlarmFlowPanel";
 import { AlarmWorklistPanel, PAGE_SIZE } from "./AlarmWorklistPanel";
 import { type Alarm, ALARMS, DEVICES, GRADES, OPEN_STATUS, STATUS_OPTIONS } from "./data";
 
-// 상태·장치·검색어 조건에 맞는 알람만 남기기
+// 알람 발생 연-월-일과 시:분:초를 시각으로 변환
+const alarmAt = (a: Alarm) =>
+  new Date(Number(a.ymd.slice(0, 4)), Number(a.ymd.slice(5, 7)) - 1, Number(a.ymd.slice(8, 10)), Number(a.time.slice(0, 2)), Number(a.time.slice(3, 5)), Number(a.time.slice(6, 8)));
+
+// 상태·장치·검색어와 날짜 기간·매일 시간대 조건에 맞는 알람만 남겨 최신 발생 순으로 정렬
 function filterAlarms(alarms: Alarm[], q: AlarmQuery) {
   const keyword = q.keyword.trim().toLowerCase();
   return alarms.filter(
     (a) =>
       (q.status === 0 || a.status === STATUS_OPTIONS[q.status]) &&
       (q.device === 0 || a.device === DEVICES[q.device]) &&
-      (!keyword || `${a.device} ${a.model}`.toLowerCase().includes(keyword)),
-  );
+      (!keyword || `${a.device} ${a.model}`.toLowerCase().includes(keyword)) &&
+      inDateTimeRange(q.range, alarmAt(a)),
+  ).sort((a, b) => alarmAt(b).getTime() - alarmAt(a).getTime());
 }
 
 export function AlarmEvents() {
   const [alarms, setAlarms] = useState(ALARMS);
-  const [query, setQuery] = useState<AlarmQuery>({ status: 0, device: 0, keyword: "" });
+  const [query, setQuery] = useState<AlarmQuery>(INITIAL_QUERY);
   const [grade, setGrade] = useState<Grade | null>(null);
   const [page, setPage] = useState(0);
   // 처음에는 아무 알람도 고르지 않은 상태로 시작

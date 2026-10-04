@@ -7,7 +7,8 @@ export const FORMATIONS = Array.from({ length: 23 }, (_, i) => String(401 + i));
 type CarStatus = Exclude<CarState, "selected">;
 type Formation = { no: string; states: CarStatus[] };
 
-const DEFAULT_NO = "415";
+// 첫 화면과 검색 조건 초기화 때 보여 줄 편성 지정
+export const DEFAULT_NO = "401";
 // 첫 화면 편성은 디자인의 호차별 상태 그대로 지정
 const DEFAULT_STATES = CARS.map((c) => c.state as CarStatus);
 

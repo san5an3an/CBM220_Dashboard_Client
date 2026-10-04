@@ -3,11 +3,11 @@
 import { useMemo, useState } from "react";
 import { DashboardShell } from "../DashboardShell";
 import { DailyDetailPanel } from "./DailyDetailPanel";
-import { DailyTrendPanel, type TimelineFilter } from "./DailyTrendPanel";
+import { DailyTrendPanel, INITIAL_FILTER, type TimelineFilter } from "./DailyTrendPanel";
 import { dailyRecords, RANGES } from "./data";
 
 export function AnomalyTimeline() {
-  const [filter, setFilter] = useState<TimelineFilter>({ device: 0, model: 0, range: RANGES.length - 1 });
+  const [filter, setFilter] = useState<TimelineFilter>(INITIAL_FILTER);
   // 고른 기간만큼 최근 기록만 남기기
   const records = useMemo(
     () => dailyRecords(filter.device, filter.model).slice(-RANGES[filter.range].days),

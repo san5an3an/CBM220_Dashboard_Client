@@ -6,7 +6,7 @@ import { Panel, Spacer } from "@/components/ui/Panel";
 import { Pager } from "../Pager";
 import { type Alarm, alarmTitle, GRADE_CODE, pad4, statusText } from "./data";
 
-export const PAGE_SIZE = 5;
+export const PAGE_SIZE = 8;
 
 type AlarmWorklistPanelProps = {
   alarms: Alarm[];
@@ -31,7 +31,8 @@ export function AlarmWorklistPanel({ alarms, page, onPage, selected, onSelect }:
         </>
       }
     >
-      <div className="flex w-full flex-col gap-2.5">
+      {/* 한 쪽 8줄이 패널 높이를 넘으면 패널 안에서 스크롤 */}
+      <div className="flex min-h-px w-full flex-1 flex-col gap-2.5 overflow-y-auto">
         {rows.map((a) => (
           <FaultListRow
             key={a.no}
