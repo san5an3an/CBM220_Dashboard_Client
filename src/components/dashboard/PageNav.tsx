@@ -10,7 +10,7 @@ import { Tabs } from "./Tabs";
 const PAGES: { label: string; href?: string }[] = [
   { label: "플릿 개요", href: "/" },
   { label: "이상 타임라인", href: "/timeline" },
-  { label: "알람/이벤트" },
+  { label: "알람/이벤트", href: "/alarms" },
   { label: "조치 관리" },
 ];
 
