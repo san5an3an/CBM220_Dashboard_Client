@@ -31,13 +31,16 @@ type DateRangeFieldProps = {
   today: Date;
   missing?: string[];
   width?: number | string;
+  // 기간 대신 날짜 하루와 시간 하나만 고르도록 지정
+  single?: boolean;
+  label?: string;
 };
 
 // 달력 대략 높이(px) 지정 — 입력칸 아래 공간이 모자라면 위로 열기 판단에 사용
-const POPOVER_H = 520;
+const POPOVER_H = { range: 520, single: 460 };
 
-// 입력칸을 누르면 달력을 열고 적용한 기간을 칸에 표시
-export function DateRangeField({ value, onChange, today, missing, width = 340 }: DateRangeFieldProps) {
+// 입력칸을 누르면 달력을 열고 적용한 기간(또는 날짜·시간)을 칸에 표시
+export function DateRangeField({ value, onChange, today, missing, width = 340, single = false, label = "조회 기간" }: DateRangeFieldProps) {
   const [place, setPlace] = useState<CSSProperties | null>(null);
   const open = place !== null;
   const root = useRef<HTMLDivElement>(null);
@@ -48,7 +51,7 @@ export function DateRangeField({ value, onChange, today, missing, width = 340 }:
     if (open || !root.current) return setPlace(null);
     const r = root.current.getBoundingClientRect();
     const below = window.innerHeight - r.bottom;
-    const up = below < POPOVER_H && r.top > below;
+    const up = below < POPOVER_H[single ? "single" : "range"] && r.top > below;
     setPlace({ right: window.innerWidth - r.right, ...(up ? { bottom: window.innerHeight - r.top + 6 } : { top: r.bottom + 6 }) });
   };
 
@@ -81,9 +84,9 @@ export function DateRangeField({ value, onChange, today, missing, width = 340 }:
         width={width}
         icon={Calendar}
         iconSide="trailing"
-        value={formatRange(value)}
+        value={single ? `${formatDate(value.start)} ${value.startTime}` : formatRange(value)}
         readOnly
-        aria-label="조회 기간"
+        aria-label={label}
         aria-haspopup="dialog"
         aria-expanded={open}
         className="cursor-pointer [&_input]:cursor-pointer"
@@ -96,6 +99,7 @@ export function DateRangeField({ value, onChange, today, missing, width = 340 }:
               today={today}
               initial={value}
               missing={missing}
+              single={single}
               onApply={(r) => {
                 onChange(r);
                 setPlace(null);

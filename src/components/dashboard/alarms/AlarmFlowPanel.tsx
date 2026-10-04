@@ -58,9 +58,10 @@ type AlarmFlowPanelProps = {
   bubble: number | null;
   onHoverBubble: (i: number) => void;
   onSelectBubble: (i: number) => void;
+  onRegister: () => void;
 };
 
-export function AlarmFlowPanel({ query, onSearch, grade, onGrade, counts, total, bubble, onHoverBubble, onSelectBubble }: AlarmFlowPanelProps) {
+export function AlarmFlowPanel({ query, onSearch, grade, onGrade, counts, total, bubble, onHoverBubble, onSelectBubble, onRegister }: AlarmFlowPanelProps) {
   return (
     <Panel
       className="h-[464px] w-full shrink-0"
@@ -69,7 +70,8 @@ export function AlarmFlowPanel({ query, onSearch, grade, onGrade, counts, total,
         <>
           <PanelHeader eyebrow="ALARM FLOW" title="알람 발생 흐름 · 최근 7일" />
           <Spacer />
-          <Toolbar query={query} onSearch={onSearch} />
+          {/* 밖에서 조건이 바뀌면(등록 후 초기화 등) 툴바 칸도 다시 맞추기 */}
+          <Toolbar key={JSON.stringify(query)} query={query} onSearch={onSearch} />
         </>
       }
     >
@@ -81,7 +83,7 @@ export function AlarmFlowPanel({ query, onSearch, grade, onGrade, counts, total,
           ))}
           <Spacer />
           <Button label="CSV 내보내기" kind="success" icon={Download} />
-          <Button label="알람 등록" icon={Plus} />
+          <Button label="알람 등록" icon={Plus} onClick={onRegister} />
         </div>
         <AlarmRiver active={bubble} onHover={onHoverBubble} onSelect={onSelectBubble} range={query.range} />
       </div>

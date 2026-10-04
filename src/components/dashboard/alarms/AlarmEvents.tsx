@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from "react";
 import type { Grade } from "@/lib/tone";
+import { Dialog, DialogItems } from "@/components/navigation";
 import { DashboardShell } from "../DashboardShell";
 import { inDateTimeRange } from "../DateRangeField";
 import { AlarmDetailPanel } from "./AlarmDetailPanel";
 import { type AlarmQuery, AlarmFlowPanel, INITIAL_QUERY } from "./AlarmFlowPanel";
+import { type AlarmDraft, AlarmRegisterModal } from "./AlarmRegisterModal";
 import { AlarmWorklistPanel, PAGE_SIZE } from "./AlarmWorklistPanel";
-import { type Alarm, ALARMS, DEVICES, GRADES, OPEN_STATUS, STATUS_OPTIONS } from "./data";
+import { type Alarm, alarmNo, ALARMS, alarmTitle, DEVICES, GRADES, OPEN_STATUS, STATUS_OPTIONS } from "./data";
 
 // 알람 발생 연-월-일과 시:분:초를 시각으로 변환
 const alarmAt = (a: Alarm) =>
@@ -25,14 +27,27 @@ function filterAlarms(alarms: Alarm[], q: AlarmQuery) {
   ).sort((a, b) => alarmAt(b).getTime() - alarmAt(a).getTime());
 }
 
+// 탭을 오가도 등록·처리한 알람이 남도록 화면 밖에 목록 보관
+let savedAlarms = ALARMS;
+
 export function AlarmEvents() {
-  const [alarms, setAlarms] = useState(ALARMS);
+  const [alarms, setAlarmsState] = useState(() => savedAlarms);
+  const setAlarms = (next: Alarm[] | ((prev: Alarm[]) => Alarm[])) =>
+    setAlarmsState((prev) => {
+      savedAlarms = typeof next === "function" ? next(prev) : next;
+      return savedAlarms;
+    });
   const [query, setQuery] = useState<AlarmQuery>(INITIAL_QUERY);
   const [grade, setGrade] = useState<Grade | null>(null);
   const [page, setPage] = useState(0);
   // 처음에는 아무 알람도 고르지 않은 상태로 시작
   const [selected, setSelected] = useState<number | null>(null);
   const [bubble, setBubble] = useState<number | null>(null);
+  // 수정·삭제하려고 체크한 알람과 삭제 확인 창 열림 지정
+  const [checked, setChecked] = useState<Set<number>>(() => new Set());
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  // 등록 시트를 열 때마다 양식을 새로 채우도록 순번 증가
+  const [register, setRegister] = useState<{ open: boolean; session: number; editNo: number | null }>({ open: false, session: 0, editNo: null });
 
   const searched = useMemo(() => filterAlarms(alarms, query), [alarms, query]);
   const list = useMemo(() => (grade === null ? searched : searched.filter((a) => a.grade === grade)), [searched, grade]);
@@ -59,7 +74,83 @@ export function AlarmEvents() {
     if (alarm) setPage(Math.floor(list.indexOf(alarm) / PAGE_SIZE));
   };
 
+  // 입력한 알람을 새 번호로 추가하거나 수정 중인 알람을 바꾸고 바로 선택
+  const saveAlarm = (d: AlarmDraft) => {
+    const before = alarms.find((a) => a.no === register.editNo);
+    const no = before?.no ?? Math.max(...alarms.map((a) => a.no)) + 1;
+    const [date, time] = d.at.split(" ");
+    const alarm: Alarm = {
+      no,
+      grade: d.grade,
+      device: d.device,
+      model: before?.model ?? "수동",
+      ratio: Number(d.ratio),
+      window: before && before.ratio === Number(d.ratio) ? before.window : Math.round(Number(d.ratio)),
+      title: d.title.trim(),
+      memo: d.memo,
+      status: before?.status ?? "신규",
+      owner: d.owner,
+      formation: d.formation,
+      car: d.car,
+      // 날짜·등급이 그대로면 강 차트 버블 연결 유지
+      bubble: before && before.ymd === date && before.grade === d.grade ? before.bubble : undefined,
+      ymd: date ?? "",
+      date: (date ?? "").slice(5),
+      time: `${time ?? "00:00"}:${before && before.time.slice(0, 5) === time ? before.time.slice(6) : "00"}`,
+    };
+    const nextAlarms = before ? alarms.map((a) => (a.no === no ? alarm : a)) : [alarm, ...alarms];
+    // 검색 조건을 처음 값으로 되돌리고 새 알람 날짜가 기간 밖이면 그 날까지 기간 넓히기
+    const day = alarmAt(alarm);
+    const base = INITIAL_QUERY.range;
+    const nextQuery: AlarmQuery = {
+      ...INITIAL_QUERY,
+      range: { ...base, start: day < base.start ? new Date(day.getFullYear(), day.getMonth(), day.getDate()) : base.start, end: day > base.end ? new Date(day.getFullYear(), day.getMonth(), day.getDate()) : base.end },
+    };
+    // 최신 순 목록에서 새 알람이 들어간 쪽으로 이동
+    const idx = filterAlarms(nextAlarms, nextQuery).findIndex((a) => a.no === no);
+    setAlarms(nextAlarms);
+    setChecked(new Set());
+    setRegister((r) => ({ ...r, open: false }));
+    setGrade(null);
+    setQuery(nextQuery);
+    setPage(Math.max(0, Math.floor(idx / PAGE_SIZE)));
+    setSelected(no);
+    setBubble(null);
+  };
+
+  const toggleCheck = (no: number, on: boolean) =>
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(no);
+      else next.delete(no);
+      return next;
+    });
+
+  // 이 쪽 줄을 한꺼번에 체크하거나 해제
+  const checkAll = (nos: number[], on: boolean) =>
+    setChecked((prev) => {
+      const next = new Set(prev);
+      for (const no of nos) {
+        if (on) next.add(no);
+        else next.delete(no);
+      }
+      return next;
+    });
+
+  // 체크한 알람을 목록에서 지우고 선택·쪽수 정리
+  const deleteChecked = () => {
+    const rest = alarms.filter((a) => !checked.has(a.no));
+    setAlarms(rest);
+    if (selected !== null && checked.has(selected)) setSelected(null);
+    const remaining = filterAlarms(rest, query).filter((a) => grade === null || a.grade === grade).length;
+    setPage((p) => Math.min(p, Math.max(0, Math.ceil(remaining / PAGE_SIZE) - 1)));
+    setChecked(new Set());
+    setConfirmDelete(false);
+  };
+
+  // 조건이 바뀌면 안 보이게 된 체크가 남지 않도록 체크도 해제
   const resetView = () => {
+    setChecked(new Set());
     setPage(0);
     setSelected(null);
     setBubble(null);
@@ -83,14 +174,45 @@ export function AlarmEvents() {
         bubble={bubble}
         onHoverBubble={setBubble}
         onSelectBubble={selectBubble}
+        onRegister={() => setRegister((r) => ({ open: true, session: r.session + 1, editNo: null }))}
       />
       <div className="relative flex min-h-px w-full flex-[1_0_0] items-start gap-4">
-        <AlarmWorklistPanel alarms={list} page={page} onPage={setPage} selected={selected} onSelect={selectAlarm} />
+        <AlarmWorklistPanel
+          alarms={list}
+          page={page}
+          onPage={setPage}
+          selected={selected}
+          onSelect={selectAlarm}
+          checked={checked}
+          onCheck={toggleCheck}
+          onCheckAll={checkAll}
+          onDelete={() => setConfirmDelete(true)}
+          onEdit={() => setRegister((r) => ({ open: true, session: r.session + 1, editNo: [...checked][0] }))}
+        />
         <AlarmDetailPanel
           alarm={current}
           onResolve={(no) => setAlarms((prev) => prev.map((a) => (a.no === no ? { ...a, status: "완료" } : a)))}
         />
       </div>
+      <Dialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        tone="error"
+        title={`알람 ${checked.size}건 삭제`}
+        description="체크한 알람을 목록에서 지웁니다. 지운 알람은 되돌릴 수 없습니다."
+        confirmLabel="삭제"
+        onConfirm={deleteChecked}
+      >
+        <DialogItems items={alarms.filter((a) => checked.has(a.no)).map((a) => ({ label: alarmTitle(a), meta: `${alarmNo(a)} · ${a.date} ${a.time}` }))} />
+      </Dialog>
+      <AlarmRegisterModal
+        key={register.session}
+        open={register.open}
+        base={current ?? alarms[0]}
+        editing={alarms.find((a) => a.no === register.editNo)}
+        onClose={() => setRegister((r) => ({ ...r, open: false }))}
+        onSubmit={saveAlarm}
+      />
     </DashboardShell>
   );
 }

@@ -21,6 +21,9 @@ export type Alarm = {
   time: string;
   // 알람 발생 흐름 차트에서 이 알람이 속한 버블 순번 지정
   bubble?: number;
+  // 입력한 알람 제목 지정 (없으면 장치 이름으로 생성)
+  title?: string;
+  memo?: string;
 };
 
 export type RiverBubble = {
@@ -139,4 +142,4 @@ export const pad4 = (n: number) => String(n).padStart(4, "0");
 // 상태를 워크리스트 설명 끝 문구로 변환
 export const statusText = (s: AlarmStatus) => (s === "오탐" ? "오탐 처리" : s);
 
-export const alarmTitle = (a: Alarm) => `${a.device} 이상 감지`;
+export const alarmTitle = (a: Alarm) => a.title ?? `${a.device} 이상 감지`;

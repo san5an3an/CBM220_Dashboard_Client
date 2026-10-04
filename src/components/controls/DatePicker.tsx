@@ -38,10 +38,12 @@ type DatePickerProps = {
   missing?: string[];
   onApply: (range: DateRange) => void;
   onCancel: () => void;
+  // 기간 대신 날짜 하루와 시간 하나만 고르도록 지정 (돌려주는 기간은 시작=끝)
+  single?: boolean;
 };
 
 // 기간을 두 번 눌러 고르고 데이터 없는 날·오늘 이후 날짜를 구분해 보여주는 달력 팝오버 표시
-export function DatePicker({ today, initial, missing = [], onApply, onCancel }: DatePickerProps) {
+export function DatePicker({ today, initial, missing = [], onApply, onCancel, single = false }: DatePickerProps) {
   const todayStart = dayStart(today);
   const [month, setMonth] = useState(new Date(initial.end.getFullYear(), initial.end.getMonth(), 1));
   const [start, setStart] = useState<Date>(dayStart(initial.start));
@@ -59,7 +61,10 @@ export function DatePicker({ today, initial, missing = [], onApply, onCancel }: 
   const missingInRange = missing.filter((k) => k >= keyOf(lo) && k <= keyOf(hi));
 
   const pick = (d: Date) => {
-    if (end || d < start) {
+    if (single) {
+      setStart(d);
+      setEnd(d);
+    } else if (end || d < start) {
       setStart(d);
       setEnd(null);
     } else {
@@ -76,7 +81,7 @@ export function DatePicker({ today, initial, missing = [], onApply, onCancel }: 
   const shiftMonth = (n: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + n, 1));
 
   return (
-    <div role="dialog" aria-label="기간 선택" className={`relative flex w-[372px] flex-col items-start gap-3 rounded-[18px] p-4 ${POPOVER} ${POP_IN}`}>
+    <div role="dialog" aria-label={single ? "날짜 선택" : "기간 선택"} className={`relative flex w-[372px] flex-col items-start gap-3 rounded-[18px] p-4 ${POPOVER} ${POP_IN}`}>
       <div className="flex w-full items-center gap-2">
         <button type="button" aria-label="이전 달" onClick={() => shiftMonth(-1)} className="cursor-pointer rounded-md p-1 text-(--text-secondary) hover:bg-(--neutral-hover) hover:text-(--text-primary)">
           <ChevronLeft size={14} />
@@ -118,7 +123,7 @@ export function DatePicker({ today, initial, missing = [], onApply, onCancel }: 
                   aria-selected={edge || inside}
                   disabled={future}
                   onClick={() => pick(d)}
-                  onMouseEnter={() => !end && setHover(d)}
+                  onMouseEnter={() => !end && !single && setHover(d)}
                   className={`flex h-[46px] min-w-px flex-1 flex-col items-center justify-center gap-[5px] transition-[background-color,box-shadow] duration-150 ${TEXT.bodyMedium} ${
                     edge
                       ? "rounded-[10px] bg-(image:--gradient-accent) font-medium text-(--text-on-accent) shadow-[0px_0px_7px_0px_color-mix(in_srgb,var(--accent-cyan)_50%,transparent)]"
@@ -145,14 +150,16 @@ export function DatePicker({ today, initial, missing = [], onApply, onCancel }: 
           <span className="size-1 rounded-full bg-(--accent-cyan)" />
           오늘
         </span>
-        <span className={`flex items-center gap-[3px] py-px font-medium text-(--status-warning) ${TEXT.labelSmall}`}>
-          <span className="size-1 rounded-full bg-(--status-warning)" />
-          데이터 없음
-        </span>
+        {!single && (
+          <span className={`flex items-center gap-[3px] py-px font-medium text-(--status-warning) ${TEXT.labelSmall}`}>
+            <span className="size-1 rounded-full bg-(--status-warning)" />
+            데이터 없음
+          </span>
+        )}
         <CalendarLegendItem type="unavailable" label="선택 불가" />
       </div>
 
-      {missingInRange.length > 0 && (
+      {!single && missingInRange.length > 0 && (
         <div className="flex w-full animate-[fade-up_220ms_ease-out] items-center gap-2 rounded-[10px] border border-(--status-warning)/25 bg-(--status-warning)/8 px-3 py-2.5">
           <TriangleAlert className="shrink-0 text-(--status-warning)" size={14} />
           <p className={`min-w-px flex-1 font-medium text-(--status-warning) ${TEXT.labelSmall}`}>
@@ -161,18 +168,20 @@ export function DatePicker({ today, initial, missing = [], onApply, onCancel }: 
         </div>
       )}
 
-      <div className="flex w-full items-start gap-1.5">
-        {PRESET_DAYS.map((n, i) => (
-          <SegmentItem key={n} grow label={i === 0 ? `최근 ${n}일` : `${n}일`} active={!!presetActive(n)} onClick={() => preset(n)} />
-        ))}
-      </div>
+      {!single && (
+        <div className="flex w-full items-start gap-1.5">
+          {PRESET_DAYS.map((n, i) => (
+            <SegmentItem key={n} grow label={i === 0 ? `최근 ${n}일` : `${n}일`} active={!!presetActive(n)} onClick={() => preset(n)} />
+          ))}
+        </div>
+      )}
 
       <div className="flex w-full items-start gap-2">
-        {(["start", "end"] as const).map((which) => (
+        {(single ? (["start"] as const) : (["start", "end"] as const)).map((which) => (
           <button
             key={which}
             type="button"
-            aria-label={which === "start" ? "시작 시간" : "종료 시간"}
+            aria-label={single ? "시간" : which === "start" ? "시작 시간" : "종료 시간"}
             onClick={() => setEditing(which)}
             className={`flex h-10 min-w-px flex-1 cursor-pointer items-center gap-2 rounded-[12px] border bg-(--neutral-input) px-3 shadow-[inset_0px_2px_4px_0px_rgba(0,0,0,0.5)] ${
               editing === which ? "border-(--border-focus)/90" : "border-(--button-secondary-border)"
@@ -186,11 +195,11 @@ export function DatePicker({ today, initial, missing = [], onApply, onCancel }: 
 
       <div className="flex w-full items-center gap-2">
         <span className={`font-medium whitespace-nowrap text-(--accent-cyan) ${TEXT.labelMedium}`}>
-          {days}일 · {mmdd(lo)} ~ {mmdd(hi)}
+          {single ? `${mmdd(lo)} ${times.start}` : `${days}일 · ${mmdd(lo)} ~ ${mmdd(hi)}`}
         </span>
         <span className="flex-1" />
         <Button kind="ghost" label="취소" onClick={onCancel} />
-        <Button kind="primary" label="적용" disabled={!end} onClick={() => end && onApply({ start: lo, end: hi, startTime: times.start, endTime: times.end })} />
+        <Button kind="primary" label="적용" disabled={!end} onClick={() => end && onApply({ start: lo, end: hi, startTime: times.start, endTime: single ? times.start : times.end })} />
       </div>
 
       {/* 화면 끝에서 잘리지 않도록 시간 선택 창을 달력 위에 덮어 가운데 표시 */}
@@ -199,7 +208,7 @@ export function DatePicker({ today, initial, missing = [], onApply, onCancel }: 
           <div aria-hidden onClick={() => setEditing(null)} className="absolute inset-0 animate-[fade-in_160ms_ease-out] rounded-[inherit] bg-(--navy-950)/55" />
           <div className="relative">
             <TimePicker
-              title={editing === "start" ? "시작 시간" : "종료 시간"}
+              title={single ? "시간" : editing === "start" ? "시작 시간" : "종료 시간"}
               value={times[editing]}
               onCancel={() => setEditing(null)}
               onApply={(v) => {
