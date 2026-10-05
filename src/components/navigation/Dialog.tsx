@@ -19,10 +19,11 @@ type DialogProps = {
   actions?: ReactNode;
   confirmLabel?: string;
   onConfirm?: () => void;
+  width?: number | string;
 };
 
 // 가운데에 떠서 확인을 묻는 다이얼로그를 엠블럼·제목·설명·내용·버튼으로 표시
-export function Dialog({ open, onClose, title, description, tone = "success", visual, children, actions, confirmLabel = "확인", onConfirm }: DialogProps) {
+export function Dialog({ open, onClose, title, description, tone = "success", visual, children, actions, confirmLabel = "확인", onConfirm, width = 520 }: DialogProps) {
   const titleId = useId();
   return (
     <Overlay open={open} onClose={onClose}>
@@ -32,7 +33,8 @@ export function Dialog({ open, onClose, title, description, tone = "success", vi
             role="alertdialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className={`relative flex w-[520px] flex-col items-center gap-4 rounded-[24px] border border-(--border-strong) px-8 pt-8 pb-7 drop-shadow-[0px_24px_30px_rgba(0,0,0,0.6)] ${
+            style={{ width }}
+            className={`relative flex flex-col items-center gap-4 rounded-[24px] border border-(--border-strong) px-8 pt-8 pb-7 drop-shadow-[0px_24px_30px_rgba(0,0,0,0.6)] ${
               leaving ? "animate-[dialog-out_200ms_ease-in_forwards]" : "animate-[dialog-in_260ms_cubic-bezier(0.2,0.9,0.3,1.15)]"
             }`}
           >

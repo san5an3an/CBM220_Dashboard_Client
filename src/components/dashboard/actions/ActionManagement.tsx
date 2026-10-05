@@ -1,7 +1,9 @@
 "use client";
 
+import { CheckCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ListItem } from "@/components/cards";
+import { Button, FormField, InputField } from "@/components/controls";
 import { Dialog } from "@/components/navigation";
 import { DashboardShell } from "../DashboardShell";
 import { inDateTimeRange } from "../DateRangeField";
@@ -39,6 +41,8 @@ export function ActionManagement() {
   const [selected, setSelected] = useState<Set<number>>(() => new Set());
   // 조치완료 확인 창에 올릴 대상 지정 (없으면 닫힘)
   const [confirm, setConfirm] = useState<number[] | null>(null);
+  // 일괄 조치완료 때 모든 대상에 함께 남길 조치 내용 지정
+  const [bulkNote, setBulkNote] = useState("");
   // 상세 시트를 열 때마다 양식을 새로 채우도록 순번 증가
   const [detail, setDetail] = useState<{ open: boolean; session: number; id: number | null }>({ open: false, session: 0, id: null });
 
@@ -59,10 +63,11 @@ export function ActionManagement() {
       return next;
     });
 
-  // 확인한 기록의 조치를 완료로 바꾸고 선택 해제
+  // 확인한 기록의 조치를 완료로 바꾸고 공통 조치 내용이 있으면 함께 남긴 뒤 선택 해제
   const markDone = () => {
     const ids = new Set(confirm ?? []);
-    setItems((prev) => prev.map((a) => (ids.has(a.id) ? { ...a, action: "완료" } : a)));
+    const note = bulkNote.trim();
+    setItems((prev) => prev.map((a) => (ids.has(a.id) ? { ...a, action: "완료", ...(note ? { note } : {}) } : a)));
     setSelected(new Set());
     setConfirm(null);
   };
@@ -107,7 +112,10 @@ export function ActionManagement() {
           selected={selected}
           onToggle={toggle}
           onProcess={(id) => setDetail((s) => ({ open: true, session: s.session + 1, id }))}
-          onBulkDone={() => setConfirm([...selected])}
+          onBulkDone={() => {
+            setBulkNote("");
+            setConfirm([...selected]);
+          }}
         />
         <ChronicSensorPanel />
       </div>
@@ -115,15 +123,27 @@ export function ActionManagement() {
         open={confirm !== null}
         onClose={() => setConfirm(null)}
         tone="success"
-        title={targets.length > 1 ? `선택한 ${targets.length}건을 조치완료 처리할까요?` : "조치완료 처리할까요?"}
+        width={560}
+        title={`선택한 ${targets.length}건을 조치완료 처리할까요?`}
         description="조치 여부가 ‘완료’로 바뀌고, 검수 대기 목록으로 이동합니다."
-        onConfirm={markDone}
+        actions={
+          <>
+            <span className="h-px min-w-px flex-1" />
+            <Button kind="ghost" label="취소" onClick={() => setConfirm(null)} />
+            <Button kind="success" icon={CheckCheck} label={`${targets.length}건 조치완료`} onClick={markDone} />
+          </>
+        }
       >
-        {/* 처리할 기록을 장치·센서와 편성 호차 목록으로 묶고 많으면 안에서 스크롤 */}
-        <div className="flex max-h-[15.5rem] w-full flex-col items-start overflow-y-auto rounded-[14px] border border-(--white)/7 bg-(--white)/3 p-4">
-          {targets.map((a, i) => (
-            <ListItem key={a.id} divider={i > 0} title={`${a.device} · ${a.sensor}`} meta={`${a.formation} · ${a.car}호차`} />
-          ))}
+        <div className="flex w-full flex-col gap-3">
+          {/* 처리할 기록을 장치·센서와 편성 호차 목록으로 묶고 많으면 안에서 스크롤 */}
+          <div className="flex max-h-[15.5rem] w-full flex-col items-start overflow-y-auto rounded-[14px] border border-(--white)/7 bg-(--white)/3 p-4">
+            {targets.map((a, i) => (
+              <ListItem key={a.id} divider={i > 0} title={`${a.device} · ${a.sensor}`} meta={`${a.formation} · ${a.car}호차`} />
+            ))}
+          </div>
+          <FormField label="공통 조치 내용" width="100%">
+            <InputField icon={null} width="100%" maxLength={200} placeholder="모든 대상에 함께 남길 조치 내용" value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} />
+          </FormField>
         </div>
       </Dialog>
       {detailItem && (
