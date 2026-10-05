@@ -22,7 +22,9 @@ export const TREND_RANGES = [
 
 const POINTS = 48;
 const DAY = 24 * 60 * 60 * 1000;
-export const TODAY = Date.UTC(2026, 8, 23);
+// 추이 마지막 날을 실제 오늘로 지정
+const NOW = new Date();
+export const TODAY = Date.UTC(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
 
 function wave(i: number, phase: number, rand: () => number) {
   return Math.sin(i / 7 + phase) * 0.9 + Math.sin(i / 3.1 + phase * 2) * 0.35 + (rand() - 0.5) * 0.25;

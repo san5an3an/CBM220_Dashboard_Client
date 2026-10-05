@@ -14,12 +14,15 @@ export type DailyRecord = {
 };
 
 const DAY = 24 * 60 * 60 * 1000;
-export const TODAY = Date.UTC(2026, 8, 23);
+// Figma 마지막 날(09-23)을 실제 오늘로 옮겨 기록 날짜 계산
+const NOW = new Date();
+export const TODAY = Date.UTC(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
+const SHIFT = TODAY - Date.UTC(2026, 8, 23);
 // 위험·주의 판정 기준 이상비율(%) 지정
 export const DANGER_AT = 20;
 const CAUTION_AT = 2;
 
-// Figma 화면의 08-25 ~ 09-23 일별 평균 이상비율 지정
+// Figma 화면의 08-25 ~ 09-23 일별 평균 이상비율 지정 (마지막 값이 오늘)
 const FIGMA_AVG = [
   3.5, 2.1, 6.2, 2.0, 3.4, 3.8, 24.1, 5.2, 6.0, 4.8, 4.4, 4.9, 6.3, 23.0, 4.1,
   3.9, 6.5, 4.6, 3.2, 2.2, 21.2, 3.7, 3.5, 6.8, 6.1, 2.6, 3.1, 22.2, 6.1, 6.7,
@@ -74,7 +77,7 @@ export function dailyRecords(device: number, model: number): DailyRecord[] {
   const scale = all ? 1 : 0.55 + rand() * 0.5;
   return FIGMA_AVG.map((base, i) => {
     const t = TODAY - (FIGMA_AVG.length - 1 - i) * DAY;
-    const known = all ? FIGMA_ROWS[formatDay(t)] : undefined;
+    const known = all ? FIGMA_ROWS[formatDay(t - SHIFT)] : undefined;
     const avg = known ? known[2] : round2(base * scale + (rand() - 0.5) * 0.08);
     const status = statusOf(avg);
     return {
