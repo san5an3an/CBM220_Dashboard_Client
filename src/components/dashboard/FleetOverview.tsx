@@ -1,9 +1,9 @@
 /* eslint-disable @next/next/no-img-element */
+import { StatusStrip } from "@/components/navigation";
 import { ConsistPanel } from "./ConsistPanel";
 import { PageNav } from "./PageNav";
 import { RiskRankingPanel } from "./RiskRankingPanel";
 import { SideRail } from "./SideRail";
-import { StatusStrip } from "./StatusStrip";
 import { TrendPanel } from "./TrendPanel";
 
 export function FleetOverview() {
@@ -25,7 +25,9 @@ export function FleetOverview() {
       </div>
       <SideRail />
       <main className="relative flex h-full min-w-px flex-[1_0_0] flex-col items-start gap-4 px-6 pb-6 pt-5">
-        <StatusStrip />
+        <header className="relative w-full shrink-0">
+          <StatusStrip system="LINE 04 · CBM 220 MONITORING SYSTEM" title="플릿 개요" alerts={4} />
+        </header>
         <PageNav />
         <ConsistPanel />
         <div className="relative flex h-[210px] w-full shrink-0 items-start gap-4">

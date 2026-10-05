@@ -10,14 +10,17 @@ type DeviceBar3DProps = {
   name: string;
   // 결함 비율(0~100) 지정
   percent: number;
+  // 막대가 트랙을 가득 채우는 비율 값 지정
+  max?: number;
+  width?: number | string;
 };
 
 // 결함 장치 순위·이름·비율을 윗면 광택이 있는 입체 막대로 표시
-export function DeviceBar3D({ rank, name, percent }: DeviceBar3DProps) {
+export function DeviceBar3D({ rank, name, percent, max = 100, width = 340 }: DeviceBar3DProps) {
   const shown = useAnimatedNumber(Math.max(0, Math.min(100, percent)), 1200);
   const { tip, track, show, hide } = useValueTip<true>();
   return (
-    <div className="relative flex w-[340px] items-center gap-2.5" onPointerMove={track} onPointerLeave={hide}>
+    <div className="relative flex items-center gap-2.5" style={{ width }} onPointerMove={track} onPointerLeave={hide}>
       <span className="flex size-5 shrink-0 items-center justify-center overflow-clip rounded-[6px] border border-(--white)/8 bg-(--white)/7">
         <span className={`font-semibold text-(--accent-cyan) ${TEXT.labelSmall}`}>{rank}</span>
       </span>
@@ -25,7 +28,7 @@ export function DeviceBar3D({ rank, name, percent }: DeviceBar3DProps) {
       <div className="relative h-3.5 min-w-px flex-1 overflow-clip rounded-[7px] bg-(--white)/5" onPointerEnter={(e) => show(true, e)}>
         <div
           className="relative h-full overflow-hidden rounded-[7px]"
-          style={{ width: `${shown}%`, boxShadow: `0 0 10px 0 ${tint("--accent-cyan", 50)}` }}
+          style={{ width: `${Math.min(100, (shown / max) * 100)}%`, boxShadow: `0 0 10px 0 ${tint("--accent-cyan", 50)}` }}
         >
           <span className="absolute inset-0 rounded-[7px] bg-linear-to-r from-(--blue-500) to-(--accent-cyan)" />
           <span className="absolute inset-y-0 left-0 w-1/3 animate-[bar-flow_2.6s_ease-in-out_infinite] bg-linear-to-r from-transparent via-(--white)/35 to-transparent" />

@@ -1,3 +1,5 @@
+import type { Tone } from "@/lib/tone";
+
 export type CarState = "normal" | "warning" | "danger" | "selected";
 
 export type Car = {
@@ -27,8 +29,8 @@ export type Telemetry = {
   unit?: string;
   tag?: string;
   range: [string, string];
-  // 카드 테두리와 게이지 색을 CSS 변수 이름으로 지정
-  color: string;
+  // 카드 테두리와 게이지 색 톤 지정
+  tone: Tone;
   left: string;
 };
 
@@ -38,7 +40,7 @@ export const TELEMETRY: Telemetry[] = [
     value: "8,642",
     unit: "건",
     range: ["0", "10,000"],
-    color: "--accent-cyan",
+    tone: "cyan",
     left: "left-[16px]",
   },
   {
@@ -46,7 +48,7 @@ export const TELEMETRY: Telemetry[] = [
     value: "21",
     unit: "/ 26",
     range: ["0", "26 장치"],
-    color: "--status-success",
+    tone: "mint",
     left: "left-[308px]",
   },
   {
@@ -54,7 +56,7 @@ export const TELEMETRY: Telemetry[] = [
     value: "10.1",
     unit: "%",
     range: ["누적 6.8%", "30 %"],
-    color: "--accent-violet",
+    tone: "violet",
     left: "left-[600px]",
   },
   {
@@ -63,14 +65,14 @@ export const TELEMETRY: Telemetry[] = [
     unit: "개",
     tag: "경고",
     range: ["0", "≥ 10%"],
-    color: "--status-warning",
+    tone: "amber",
     left: "left-[892px]",
   },
   {
     label: "최근 추론",
     value: "12:30",
     range: ["09-23", "3분 전"],
-    color: "--slate-400",
+    tone: "slate",
     left: "left-[1184px]",
   },
   {
@@ -79,7 +81,7 @@ export const TELEMETRY: Telemetry[] = [
     unit: "개",
     tag: "위험",
     range: ["0", "≥ 20%"],
-    color: "--status-danger",
+    tone: "coral",
     left: "left-[1476px]",
   },
 ];
