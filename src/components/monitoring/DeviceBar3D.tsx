@@ -13,10 +13,13 @@ type DeviceBar3DProps = {
   // 막대가 트랙을 가득 채우는 비율 값 지정
   max?: number;
   width?: number | string;
+  // 값 뒤 단위와 말풍선 항목 이름 지정 (비율 대신 횟수 등을 보일 때)
+  unit?: string;
+  tipLabel?: string;
 };
 
 // 결함 장치 순위·이름·비율을 윗면 광택이 있는 입체 막대로 표시
-export function DeviceBar3D({ rank, name, percent, max = 100, width = 340 }: DeviceBar3DProps) {
+export function DeviceBar3D({ rank, name, percent, max = 100, width = 340, unit = "%", tipLabel = "결함 비율" }: DeviceBar3DProps) {
   const shown = useAnimatedNumber(Math.max(0, Math.min(100, percent)), 1200);
   const { tip, track, show, hide } = useValueTip<true>();
   return (
@@ -36,8 +39,10 @@ export function DeviceBar3D({ rank, name, percent, max = 100, width = 340 }: Dev
         </div>
         <span className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-[inset_0px_2px_3px_0px_rgba(0,0,0,0.6)]" />
       </div>
-      <p className={`w-9 shrink-0 text-right font-semibold text-(--text-primary) tabular-nums ${TEXT.labelLarge}`}>{Math.round(shown)}%</p>
-      <ValueTip at={tip} label={name} rows={[{ name: "결함 비율", value: Math.round(percent), unit: "%", color: "var(--accent-cyan)" }]} />
+      <p className={`w-9 shrink-0 text-right font-semibold text-(--text-primary) tabular-nums ${TEXT.labelLarge}`}>{Math.round(shown)}
+        {unit}
+      </p>
+      <ValueTip at={tip} label={name} rows={[{ name: tipLabel, value: Math.round(percent), unit, color: "var(--accent-cyan)" }]} />
     </div>
   );
 }

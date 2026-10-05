@@ -28,9 +28,11 @@ const ALIGN = { start: "justify-start", center: "justify-center", end: "justify-
 export function Cell({ text, type = "body", width = 120, align }: CellProps) {
   const t = CELL_TYPE[type];
   const grow = width === "grow";
+  // 정렬을 지정하면 칸 종류의 기본 정렬 대신 그 정렬만 남기기
+  const box = align ? `${t.box.replace(/justify-\S+/, "")} ${ALIGN[align]}` : t.box;
   return (
     <div
-      className={`flex items-center border-b border-(--border-subtle) px-3 ${grow ? "min-w-px flex-1" : "shrink-0"} ${t.box} ${align ? ALIGN[align] : ""}`}
+      className={`flex items-center border-b border-(--border-subtle) px-3 ${grow ? "min-w-px flex-1" : "shrink-0"} ${box}`}
       style={grow ? undefined : { width }}
     >
       {/* 값이 바뀔 때마다 새로 그려 살짝 커졌다 돌아오게 처리 */}
