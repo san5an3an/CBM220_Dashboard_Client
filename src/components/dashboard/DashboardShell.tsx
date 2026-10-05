@@ -8,10 +8,12 @@ type DashboardShellProps = {
   title: string;
   // 페이지 탭에서 현재 페이지 순서 지정
   page: number;
+  // 상단 경보 문구와 건수 지정
+  alert?: { label: string; count: number };
   children: ReactNode;
 };
 
-export function DashboardShell({ title, page, children }: DashboardShellProps) {
+export function DashboardShell({ title, page, alert = { label: "실시간 고장", count: 4 }, children }: DashboardShellProps) {
   return (
     // 1920×1080 기준 고정 크기로 두고 큰 화면에서는 패널을 늘려 공간 채움
     <div
@@ -31,7 +33,7 @@ export function DashboardShell({ title, page, children }: DashboardShellProps) {
       <SideRail />
       <main className="relative flex h-full min-w-px flex-[1_0_0] flex-col items-start gap-4 px-6 pb-6 pt-5">
         <header className="relative w-full shrink-0">
-          <StatusStrip system="LINE 04 · CBM 220 MONITORING SYSTEM" title={title} alerts={4} />
+          <StatusStrip system="LINE 04 · CBM 220 MONITORING SYSTEM" title={title} alerts={alert.count} alertLabel={alert.label} />
         </header>
         <PageNav page={page} />
         {children}

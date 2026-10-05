@@ -21,7 +21,7 @@ export function FilterChip({ label, count, active = false, grade, onClick }: Fil
         active
           ? "border-(--accent-cyan)/60 bg-(--accent-cyan)/16 shadow-[0px_0px_5px_0px_color-mix(in_srgb,var(--accent-cyan)_25%,transparent)]"
           : "border-(--border-default) bg-(--neutral-hover) hover:border-(--border-strong)"
-      } ${grade ? "" : "pl-3"}`}
+      }`}
     >
       {grade && <GradeChip grade={grade} size={20} />}
       <span className={`font-semibold whitespace-nowrap ${TEXT.labelLarge} ${active ? "text-(--text-primary)" : "text-(--text-secondary)"}`}>{label}</span>

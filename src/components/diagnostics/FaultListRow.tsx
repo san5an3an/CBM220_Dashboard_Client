@@ -30,6 +30,7 @@ export const DEFAULT_FAULT: FaultRecord = {
 
 type FaultListRowProps = Partial<FaultRecord> & {
   selected?: boolean;
+  width?: number | string;
   onSelect?: () => void;
 };
 
@@ -43,7 +44,7 @@ function Pair({ top, bottom, width }: { top: string; bottom: string; width: numb
 }
 
 // 고장 한 건을 등급·내용·열차·위치·발생 시각 한 줄로 표시하고 누르면 선택
-export function FaultListRow({ selected = false, onSelect, ...rest }: FaultListRowProps) {
+export function FaultListRow({ selected = false, onSelect, width = 1100, ...rest }: FaultListRowProps) {
   const f = { ...DEFAULT_FAULT, ...rest };
   return (
     <button
@@ -51,7 +52,8 @@ export function FaultListRow({ selected = false, onSelect, ...rest }: FaultListR
       aria-pressed={selected}
       onClick={onSelect}
       // 버튼과 같은 0.12초 눌림 전환을 쓰되 넓은 행이라 줄어드는 정도는 0.99 로 지정
-      className={`group relative flex h-[60px] w-[1100px] cursor-pointer items-center gap-4 rounded-[14px] border px-4 text-left transition-[scale,translate,border-color,background-color] duration-[120ms,120ms,300ms,300ms] ease-out active:scale-[0.99] ${
+      style={{ width }}
+      className={`group relative flex h-[60px] cursor-pointer items-center gap-4 rounded-[14px] border px-4 text-left transition-[scale,translate,border-color,background-color] duration-[120ms,120ms,300ms,300ms] ease-out active:scale-[0.99] ${
         selected ? "border-(--accent-cyan)/50" : "border-(--white)/5 bg-(--neutral-card) hover:border-(--white)/12 hover:bg-(--white)/5"
       }`}
     >

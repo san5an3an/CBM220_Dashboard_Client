@@ -26,6 +26,9 @@ type StateBlockProps = {
   // 기본 검색 버튼 대신 넣을 동작 버튼 지정
   children?: ReactNode;
   onAction?: () => void;
+  // 동작 버튼을 숨기도록 지정
+  showAction?: boolean;
+  width?: number | string;
 };
 
 // 불러오는 중 가운데 큐브를 감싸고 도는 로딩 호 표시
@@ -49,12 +52,12 @@ function LoadingEmblem({ token }: { token: string }) {
 }
 
 // 빈 결과·오류·로딩·완료 상태를 엠블럼과 안내 문구, 동작 버튼으로 표시
-export function StateBlock({ kind = "empty", title, body, meta, showMeta = true, children, onAction }: StateBlockProps) {
+export function StateBlock({ kind = "empty", title, body, meta, showMeta = true, children, onAction, showAction = true, width = 520 }: StateBlockProps) {
   const { token, emblem, Icon } = STATE_KIND[kind];
   return (
     <div
-      className="relative flex w-[520px] animate-[fade-up_360ms_ease-out] flex-col items-center gap-3 rounded-[20px] border border-(--border-default) px-8 py-7"
-      style={{ backgroundImage: `radial-gradient(50% 50% at 50% 50%, ${tint(token, 10)}, transparent)` }}
+      className="relative flex animate-[fade-up_360ms_ease-out] flex-col items-center gap-3 rounded-[20px] border border-(--border-default) px-8 py-7"
+      style={{ width, backgroundImage: `radial-gradient(50% 50% at 50% 50%, ${tint(token, 10)}, transparent)` }}
     >
       {emblem ? <DialogEmblem tone={emblem} icon={Icon} dashedOrbit /> : <LoadingEmblem token={token} />}
       <p className={`font-extrabold whitespace-nowrap text-(--text-primary) ${TEXT.headlineSmall}`}>{title}</p>
@@ -66,7 +69,7 @@ export function StateBlock({ kind = "empty", title, body, meta, showMeta = true,
           </span>
         </span>
       )}
-      <div className="flex items-start pt-1.5">{children ?? <Button label="검색" icon={Search} onClick={onAction} />}</div>
+      {showAction && <div className="flex items-start pt-1.5">{children ?? <Button label="검색" icon={Search} onClick={onAction} />}</div>}
     </div>
   );
 }

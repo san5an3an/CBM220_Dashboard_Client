@@ -13,7 +13,8 @@ type OwnCanvasProps = {
 export function OwnCanvas({ className = "", style, children }: OwnCanvasProps) {
   return (
     <div className={`relative shrink-0 ${className}`} style={style}>
-      <Canvas flat dpr={[1, 2]} gl={{ antialias: true, alpha: true }} style={{ position: "absolute", inset: 0 }}>
+      {/* 부모가 CSS 로 축소돼도 축소 전 크기로 그리도록 offset 크기로 재기 */}
+      <Canvas flat dpr={[1, 2]} gl={{ antialias: true, alpha: true }} resize={{ offsetSize: true }} style={{ position: "absolute", inset: 0 }}>
         {children}
       </Canvas>
     </div>
