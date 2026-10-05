@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from "react";
 import type { Grade } from "@/lib/tone";
-import { Dialog, DialogItems } from "@/components/navigation";
+import { TriangleAlert } from "lucide-react";
+import { ListItem } from "@/components/cards";
+import { Button } from "@/components/controls";
+import { Dialog, DialogEmblem } from "@/components/navigation";
 import { DashboardShell } from "../DashboardShell";
 import { inDateTimeRange } from "../DateRangeField";
 import { AlarmDetailPanel } from "./AlarmDetailPanel";
@@ -10,7 +13,7 @@ import { type AlarmProcess, AlarmProcessModal } from "./AlarmProcessModal";
 import { type AlarmQuery, AlarmFlowPanel, INITIAL_QUERY } from "./AlarmFlowPanel";
 import { type AlarmDraft, AlarmRegisterModal, nowText } from "./AlarmRegisterModal";
 import { AlarmWorklistPanel, PAGE_SIZE } from "./AlarmWorklistPanel";
-import { type Alarm, alarmNo, ALARMS, alarmTitle, DEVICES, GRADES, OPEN_STATUS, STATUS_OPTIONS } from "./data";
+import { type Alarm, ALARMS, alarmTitle, DEVICES, GRADES, OPEN_STATUS, STATUS_OPTIONS } from "./data";
 
 // 알람 발생 연-월-일과 시:분:초를 시각으로 변환
 const alarmAt = (a: Alarm) =>
@@ -222,13 +225,25 @@ export function AlarmEvents() {
       <Dialog
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
-        tone="error"
-        title={`알람 ${checked.size}건 삭제`}
-        description="체크한 알람을 목록에서 지웁니다. 지운 알람은 되돌릴 수 없습니다."
-        confirmLabel="삭제"
-        onConfirm={deleteChecked}
+        visual={<DialogEmblem tone="error" icon={TriangleAlert} />}
+        title={`알람 ${checked.size}건을 삭제할까요?`}
+        description={"삭제한 알람은 복구할 수 없으며,\n연결된 처리 이력도 함께 삭제됩니다."}
+        actions={
+          <>
+            <span className="h-px min-w-px flex-1" />
+            <Button kind="ghost" label="취소" onClick={() => setConfirmDelete(false)} />
+            <Button kind="danger" label={`${checked.size}건 삭제`} onClick={deleteChecked} />
+          </>
+        }
       >
-        <DialogItems items={alarms.filter((a) => checked.has(a.no)).map((a) => ({ label: alarmTitle(a), meta: `${alarmNo(a)} · ${a.date} ${a.time}` }))} />
+        {/* 지울 알람을 등급·제목·편성 호차 목록으로 묶고 많으면 안에서 스크롤 */}
+        <div className="flex max-h-[15.5rem] w-full flex-col items-start overflow-y-auto rounded-[14px] border border-(--white)/7 bg-(--white)/3 p-4">
+          {alarms
+            .filter((a) => checked.has(a.no))
+            .map((a, i) => (
+              <ListItem key={a.no} divider={i > 0} grade={a.grade} title={alarmTitle(a)} meta={`${a.formation} · ${a.car}호차`} />
+            ))}
+        </div>
       </Dialog>
       {processAlarm && (
         <AlarmProcessModal

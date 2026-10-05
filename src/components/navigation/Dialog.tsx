@@ -41,7 +41,8 @@ export function Dialog({ open, onClose, title, description, tone = "success", vi
             <h2 id={titleId} className={`relative w-full text-center font-extrabold text-(--text-primary) ${TEXT.headlineSmall}`}>
               {title}
             </h2>
-            {description && <p className={`relative w-full text-center text-(--text-secondary) ${TEXT.bodyMedium}`}>{description}</p>}
+            {/* 설명 문구의 줄바꿈은 그대로 살려 표시 */}
+            {description && <p className={`relative w-full text-center whitespace-pre-line text-(--text-secondary) ${TEXT.bodyMedium}`}>{description}</p>}
             {children && <div className="relative flex w-full flex-col items-start">{children}</div>}
             <div className="relative flex w-full items-center gap-2.5">
               {actions ?? (
