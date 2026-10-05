@@ -1,6 +1,8 @@
 "use client";
 
+import type { DateRange } from "@/components/controls";
 import { FaultBubble } from "@/components/diagnostics";
+import { inDateTimeRange } from "../DateRangeField";
 import { GradeChip } from "@/components/foundations";
 import { GRADE, tint } from "@/lib/tone";
 import { TEXT } from "@/lib/typography";
@@ -23,10 +25,13 @@ type AlarmRiverProps = {
   active: number | null;
   onHover: (bubble: number) => void;
   onSelect: (bubble: number) => void;
+  // 조회 날짜 기간·시간대 지정 (밖의 버블은 흐리게)
+  range: DateRange;
 };
 
 // 7일간 알람을 등급별 레인 위 건수 크기 버블로 흘려 보여주고 고른 버블에 시각 커서·설명 표시
-export function AlarmRiver({ active, onHover, onSelect }: AlarmRiverProps) {
+export function AlarmRiver({ active, onHover, onSelect, range }: AlarmRiverProps) {
+  const inRange = (b: (typeof BUBBLES)[number]) => !b.at || inDateTimeRange(range, b.at);
   const current = active === null ? undefined : BUBBLES[active];
   const ring = current ? current.size + RING_PAD : 0;
   return (
@@ -77,6 +82,7 @@ export function AlarmRiver({ active, onHover, onSelect }: AlarmRiverProps) {
       )}
       {BUBBLES.map((b, i) => (
         <button
+          disabled={!inRange(b)}
           key={`${b.grade}-${b.time}`}
           type="button"
           aria-label={`${b.time} ${b.title} ${b.count}건`}
@@ -85,7 +91,7 @@ export function AlarmRiver({ active, onHover, onSelect }: AlarmRiverProps) {
           onMouseEnter={() => onHover(i)}
           onFocus={() => onHover(i)}
           onClick={() => onSelect(i)}
-          className="absolute cursor-pointer rounded-full transition-transform hover:scale-110"
+          className="absolute cursor-pointer rounded-full transition-[transform,opacity] duration-300 hover:scale-110 disabled:pointer-events-none disabled:opacity-20"
           style={{ left: b.x - b.size / 2, top: b.y - b.size / 2, animation: `pop-in 400ms ease-out ${i * 40}ms both` }}
         >
           <FaultBubble grade={b.grade} count={b.count} size={b.size} phase={i * 0.37} />

@@ -20,14 +20,15 @@ const CAR_STATE: Record<Grade, CarState> = { A: "danger", B: "danger", C: "warni
 
 type AlarmDetailPanelProps = {
   alarm: Alarm | null;
-  onResolve: (no: number) => void;
+  onProcess: (no: number) => void;
 };
 
-// 고른 알람의 요약·발생 차량·상태와 처리 버튼 표시
-function Detail({ alarm, onResolve }: { alarm: Alarm; onResolve: (no: number) => void }) {
+// 고른 알람의 요약·발생 차량·상태와 처리 모달을 여는 버튼 표시
+function Detail({ alarm, onProcess }: { alarm: Alarm; onProcess: (no: number) => void }) {
   const open = OPEN_STATUS.includes(alarm.status);
   return (
-    <div className="flex w-full flex-col gap-2.5">
+    // 패널 높이에 맞춰 카드·차량·상태·버튼을 위아래로 고르게 벌려 배치
+    <div className="flex size-full flex-col justify-between gap-2.5">
       <FaultSummaryCard
         width="100%"
         grade={alarm.grade}
@@ -49,21 +50,21 @@ function Detail({ alarm, onResolve }: { alarm: Alarm; onResolve: (no: number) =>
             {alarm.formation} 편성 · {alarm.car}호차
           </p>
           <p className={`font-medium text-(--text-secondary) ${TEXT.labelMedium}`}>
-            발생 2026-{alarm.date} {alarm.time}
+            발생 {alarm.ymd} {alarm.time}
           </p>
         </div>
       </div>
       <DetailField width="100%" label="상태 · 담당" value={`${alarm.status} · ${alarm.owner}`} />
-      <Button label="알람 처리" icon={CheckCheck} className="w-full" disabled={!open} onClick={() => onResolve(alarm.no)} />
+      <Button label="알람 처리" icon={CheckCheck} className="w-full" disabled={!open} onClick={() => onProcess(alarm.no)} />
     </div>
   );
 }
 
-export function AlarmDetailPanel({ alarm, onResolve }: AlarmDetailPanelProps) {
+export function AlarmDetailPanel({ alarm, onProcess }: AlarmDetailPanelProps) {
   return (
     <Panel className="h-full w-[420px] shrink-0" header={<PanelHeader eyebrow="SELECTED" title="선택 알람 상세" />}>
       {alarm ? (
-        <Detail alarm={alarm} onResolve={onResolve} />
+        <Detail alarm={alarm} onProcess={onProcess} />
       ) : (
         <div className="flex size-full items-center justify-center">
           <StateBlock kind="empty" title="선택해주세요" body="워크리스트나 버블에서 알람을 고르세요" showAction={false} width="100%" />

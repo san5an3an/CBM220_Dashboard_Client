@@ -13,15 +13,16 @@ type CalloutProps = {
   title: string;
   body: string;
   tone?: CalloutTone;
+  width?: number | string;
 };
 
 // 검지 기준이나 진단 의견을 톤 색 제목과 본문 상자로 표시
-export function Callout({ title, body, tone = "criteria" }: CalloutProps) {
+export function Callout({ title, body, tone = "criteria", width = 560 }: CalloutProps) {
   const { token, Icon } = CALLOUT_TONE[tone];
   return (
     <div
-      className="relative flex w-[560px] animate-[fade-up_360ms_ease-out] flex-col items-start gap-2 rounded-[16px] border px-[18px] py-4"
-      style={{ borderColor: tint(token, 45) }}
+      className="relative flex animate-[fade-up_360ms_ease-out] flex-col items-start gap-2 rounded-[16px] border px-[18px] py-4"
+      style={{ width, borderColor: tint(token, 45) }}
     >
       <div
         aria-hidden

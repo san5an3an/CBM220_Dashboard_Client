@@ -5,8 +5,8 @@ import { useState } from "react";
 import { Button, Select, SquareButton } from "@/components/controls";
 import { PanelHeader } from "@/components/foundations";
 import { Panel, Spacer } from "@/components/ui/Panel";
-import { playIntro, replayArrival } from "./consist/arrival";
-import { FORMATIONS, setFormation, useFormation } from "./consist/formation";
+import { playIntro } from "./consist/arrival";
+import { DEFAULT_NO, FORMATIONS, setFormation, useFormation } from "./consist/formation";
 import { ConsistScene } from "./consist/ConsistScene";
 
 const OPTIONS = FORMATIONS.map((no) => ({ value: no, label: `${no} 편성` }));
@@ -17,7 +17,15 @@ function Toolbar() {
   return (
     <div className="relative flex shrink-0 items-center gap-2 rounded-[16px] border border-(--border-default) bg-(--neutral-card) p-1.5">
       <Select options={OPTIONS} value={pending} onChange={setPending} />
-      <SquareButton label="새로고침" onClick={replayArrival} />
+      <SquareButton
+        label="검색 조건 초기화"
+        // 첫 화면 편성으로 되돌리고 조회처럼 정면 연출부터 다시 재생
+        onClick={() => {
+          setPending(DEFAULT_NO);
+          setFormation(DEFAULT_NO);
+          playIntro();
+        }}
+      />
       <Button
         label="조회"
         icon={Search}

@@ -1,5 +1,9 @@
 import type { Tone } from "@/lib/tone";
 
+// 최근 추론 날짜를 실제 오늘 월-일로 지정
+const NOW = new Date();
+const TODAY_MD = `${String(NOW.getMonth() + 1).padStart(2, "0")}-${String(NOW.getDate()).padStart(2, "0")}`;
+
 export type CarState = "normal" | "warning" | "danger" | "selected";
 
 export type Car = {
@@ -71,7 +75,7 @@ export const TELEMETRY: Telemetry[] = [
   {
     label: "최근 추론",
     value: "12:30",
-    range: ["09-23", "3분 전"],
+    range: [TODAY_MD, "3분 전"],
     tone: "slate",
     left: "left-[1184px]",
   },

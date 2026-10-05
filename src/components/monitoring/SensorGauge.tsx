@@ -23,17 +23,19 @@ type SensorGaugeProps = {
   tone?: Tone;
   // 소수 자릿수 지정
   digits?: number;
+  width?: number | string;
 };
 
 // 센서 값 하나를 입체 반원 게이지와 큰 숫자로 표시
-export function SensorGauge({ label, value, unit, min = 0, max = 100, sub, tag, tone = "cyan", digits = 0 }: SensorGaugeProps) {
+export function SensorGauge({ label, value, unit, min = 0, max = 100, sub, tag, tone = "cyan", digits = 0, width = 360 }: SensorGaugeProps) {
   const id = useId();
   const token = TONE[tone];
   const shown = useAnimatedNumber(value, 1200);
   const ratio = Math.max(0, Math.min(1, (shown - min) / (max - min || 1)));
   const text = shown.toFixed(digits);
   return (
-    <div className="relative flex h-[132px] w-[360px] items-center gap-4 overflow-clip rounded-[18px] border border-(--border-default) pr-[18px] pl-4 shadow-[0px_10px_20px_0px_rgba(0,0,0,0.4)]">
+    <div style={{ width }}
+      className="relative flex h-[132px] items-center gap-4 overflow-clip rounded-[18px] border border-(--border-default) pr-[18px] pl-4 shadow-[0px_10px_20px_0px_rgba(0,0,0,0.4)]">
       <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[18px] bg-linear-[159.9deg] from-(--navy-700) to-(--navy-800)" />
       <div aria-hidden className="pointer-events-none absolute top-[-11px] left-[-21px] size-[140px] rounded-full blur-[25px]" style={{ background: tint(token, 22) }} />
       <div className="relative h-[100px] w-28 shrink-0">
