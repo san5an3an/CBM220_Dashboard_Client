@@ -19,6 +19,7 @@ type PipelineStepProps = {
   showArrow?: boolean;
   // 진행 중이면 번호 구슬 바깥에 원형 로딩 표시 지정
   loading?: boolean;
+  width?: number | string;
 };
 
 // 진단 단계 하나를 번호 구슬·수치·다음 단계 화살표로 표시하고 화살표 빛이 흐르도록 갱신
@@ -32,6 +33,7 @@ export function PipelineStep({
   type = "metric",
   showArrow = true,
   loading = false,
+  width = 400,
 }: PipelineStepProps) {
   const token = TONE[tone];
   const metric = type === "metric";
@@ -39,8 +41,8 @@ export function PipelineStep({
   const orb = metric ? 56 : 44;
   return (
     <div
-      className={`relative flex w-[400px] items-center rounded-[20px] border ${metric ? "h-[108px] gap-[18px] pr-12 pl-6" : "gap-3 p-4"}`}
-      style={{ borderColor: tint(token, 45), filter: `drop-shadow(0 8px 12px ${tint(token, 25)})` }}
+      className={`relative flex items-center rounded-[20px] border ${metric ? "h-[108px] gap-[18px] pr-12 pl-6" : "gap-3 p-4"}`}
+      style={{ width, borderColor: tint(token, 45), filter: `drop-shadow(0 8px 12px ${tint(token, 25)})` }}
     >
       <div aria-hidden className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ backgroundImage: `linear-gradient(to right, ${tint(token, 20)}, ${tint(token, 4)})` }} />
       <div className="relative shrink-0" style={{ width: orb, height: orb }}>

@@ -24,6 +24,11 @@ export type Alarm = {
   // 입력한 알람 제목 지정 (없으면 장치 이름으로 생성)
   title?: string;
   memo?: string;
+  // 알람 처리 모달에서 입력한 처리 내용·완료 일시 지정
+  note?: string;
+  doneAt?: string;
+  // 처리 단계별로 바뀐 때와 담당 문구 지정
+  steps?: Partial<Record<AlarmStatus, string>>;
 };
 
 export type RiverBubble = {

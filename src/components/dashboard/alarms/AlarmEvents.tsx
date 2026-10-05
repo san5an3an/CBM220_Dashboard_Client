@@ -6,8 +6,9 @@ import { Dialog, DialogItems } from "@/components/navigation";
 import { DashboardShell } from "../DashboardShell";
 import { inDateTimeRange } from "../DateRangeField";
 import { AlarmDetailPanel } from "./AlarmDetailPanel";
+import { type AlarmProcess, AlarmProcessModal } from "./AlarmProcessModal";
 import { type AlarmQuery, AlarmFlowPanel, INITIAL_QUERY } from "./AlarmFlowPanel";
-import { type AlarmDraft, AlarmRegisterModal } from "./AlarmRegisterModal";
+import { type AlarmDraft, AlarmRegisterModal, nowText } from "./AlarmRegisterModal";
 import { AlarmWorklistPanel, PAGE_SIZE } from "./AlarmWorklistPanel";
 import { type Alarm, alarmNo, ALARMS, alarmTitle, DEVICES, GRADES, OPEN_STATUS, STATUS_OPTIONS } from "./data";
 
@@ -46,6 +47,8 @@ export function AlarmEvents() {
   // 수정·삭제하려고 체크한 알람과 삭제 확인 창 열림 지정
   const [checked, setChecked] = useState<Set<number>>(() => new Set());
   const [confirmDelete, setConfirmDelete] = useState(false);
+  // 처리 시트를 열 때마다 양식을 새로 채우도록 순번 증가
+  const [processing, setProcessing] = useState<{ open: boolean; session: number; no: number | null }>({ open: false, session: 0, no: null });
   // 등록 시트를 열 때마다 양식을 새로 채우도록 순번 증가
   const [register, setRegister] = useState<{ open: boolean; session: number; editNo: number | null }>({ open: false, session: 0, editNo: null });
 
@@ -56,6 +59,7 @@ export function AlarmEvents() {
     [searched],
   );
   const current = alarms.find((a) => a.no === selected) ?? null;
+  const processAlarm = alarms.find((a) => a.no === processing.no);
   const unresolved = alarms.filter((a) => OPEN_STATUS.includes(a.status)).length;
 
   // 알람을 고르면 그 알람이 속한 버블로 커서를 옮기고 목록 쪽수도 맞춤
@@ -126,6 +130,27 @@ export function AlarmEvents() {
       return next;
     });
 
+  // 처리 입력을 알람에 반영하고 이번 단계에 바뀐 때와 담당 기록
+  const saveProcess = (p: AlarmProcess) => {
+    const now = nowText().slice(5);
+    setAlarms((prev) =>
+      prev.map((a) =>
+        a.no === processing.no
+          ? { ...a, status: p.status, owner: p.owner, note: p.note, doneAt: p.doneAt, steps: { ...a.steps, [p.status]: `${p.status === "완료" ? p.doneAt.slice(5) : now} · ${p.owner}` } }
+          : a,
+      ),
+    );
+    setProcessing((s) => ({ ...s, open: false }));
+  };
+
+  // 처리 시트에서 지우기를 누르면 그 알람만 체크해 삭제 확인 창 열기
+  const deleteFromProcess = () => {
+    if (processing.no === null) return;
+    setChecked(new Set([processing.no]));
+    setProcessing((s) => ({ ...s, open: false }));
+    setConfirmDelete(true);
+  };
+
   // 이 쪽 줄을 한꺼번에 체크하거나 해제
   const checkAll = (nos: number[], on: boolean) =>
     setChecked((prev) => {
@@ -191,7 +216,7 @@ export function AlarmEvents() {
         />
         <AlarmDetailPanel
           alarm={current}
-          onResolve={(no) => setAlarms((prev) => prev.map((a) => (a.no === no ? { ...a, status: "완료" } : a)))}
+          onProcess={(no) => setProcessing((s) => ({ open: true, session: s.session + 1, no }))}
         />
       </div>
       <Dialog
@@ -205,6 +230,16 @@ export function AlarmEvents() {
       >
         <DialogItems items={alarms.filter((a) => checked.has(a.no)).map((a) => ({ label: alarmTitle(a), meta: `${alarmNo(a)} · ${a.date} ${a.time}` }))} />
       </Dialog>
+      {processAlarm && (
+        <AlarmProcessModal
+          key={processing.session}
+          open={processing.open}
+          alarm={processAlarm}
+          onClose={() => setProcessing((s) => ({ ...s, open: false }))}
+          onSubmit={saveProcess}
+          onDelete={deleteFromProcess}
+        />
+      )}
       <AlarmRegisterModal
         key={register.session}
         open={register.open}

@@ -15,26 +15,31 @@ type StatusBannerProps = {
   visual?: ReactNode;
   // 제목·설명 대신 넣을 내용 지정
   content?: ReactNode;
+  // 왼쪽 그림 자리를 숨기려면 false 지정
+  showVisual?: boolean;
+  width?: number | string;
 };
 
 // 상세 모달 위쪽에 그림과 상태 문구를 톤 색 배너로 표시
-export function StatusBanner({ tone = "accent", title, description, visual, content }: StatusBannerProps) {
+export function StatusBanner({ tone = "accent", title, description, visual, content, showVisual = true, width = 1064 }: StatusBannerProps) {
   const t = BANNER_TONE[tone];
   return (
     <div
-      className={`relative flex w-[1064px] items-center gap-4 overflow-hidden rounded-[18px] border p-4 ${
+      className={`relative flex items-center gap-4 overflow-hidden rounded-[18px] border p-4 ${
         tone === "danger" ? "animate-[danger-glow_2.4s_ease-in-out_infinite]" : ""
       }`}
-      style={{ borderColor: tint(t.token, 35), backgroundImage: `linear-gradient(to right, ${t.from}, ${t.to})` }}
+      style={{ width, borderColor: tint(t.token, 35), backgroundImage: `linear-gradient(to right, ${t.from}, ${t.to})` }}
     >
       <span
         aria-hidden
         className="pointer-events-none absolute inset-y-0 left-0 w-1/3 animate-[banner-sweep_5s_ease-in-out_infinite] -skew-x-12"
         style={{ backgroundImage: `linear-gradient(to right, transparent, ${tint(t.token, 10)}, transparent)` }}
       />
-      <div className="relative flex shrink-0 items-start">
-        {visual ?? <div className="size-24 rounded-[48px]" style={{ background: tint(t.token, 12) }} />}
-      </div>
+      {showVisual && (
+        <div className="relative flex shrink-0 items-start">
+          {visual ?? <div className="size-24 rounded-[48px]" style={{ background: tint(t.token, 12) }} />}
+        </div>
+      )}
       <div className="relative flex min-w-px flex-1 flex-col items-start gap-2 font-medium whitespace-nowrap">
         {content ?? (
           <>

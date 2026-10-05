@@ -20,7 +20,7 @@ const STAGE_STATE: Record<Grade, CarState> = { A: "fault", B: "fault", C: "inspe
 
 const FORMATIONS = ["401", "402", "403", "404", "405", "415"];
 const CARS = Array.from({ length: 10 }, (_, i) => String(i).padStart(2, "0"));
-const OWNERS = ["미지정", "박기술", "이현장", "김정비"];
+export const OWNERS = ["미지정", "박기술", "이현장", "김정비"];
 
 const options = (values: string[]) => values.map((v) => ({ value: v, label: v }));
 
@@ -37,7 +37,7 @@ export type AlarmDraft = {
 };
 
 // 지금 시각을 "연-월-일 시:분" 문구로 변환
-const nowText = () => {
+export const nowText = () => {
   const d = new Date();
   return `${ymdOf(d)} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 };
