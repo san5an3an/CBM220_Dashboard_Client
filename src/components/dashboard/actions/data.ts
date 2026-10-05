@@ -17,7 +17,14 @@ export type ActionItem = {
   car: number;
   action: ActionState;
   inspect: InspectState;
+  // 담당자와 조치 내용 지정
+  owner: string;
+  note?: string;
+  // 최근 조치 이력(최신 순) 지정
+  history: ActionHistory[];
 };
+
+export type ActionHistory = { date: string; owner: string; what: string };
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
@@ -50,6 +57,17 @@ const EXTRA_STATE: [ActionState, InspectState][] = [
   ["완료", "완료"], ["미조치", "미검수"], ["미조치", "미검수"], ["완료", "완료"], ["미조치", "미검수"], ["미조치", "미검수"], ["미조치", "미검수"],
 ];
 
+export const OWNERS = ["미지정", "박기술", "이현장", "김정비"];
+const HISTORY_WHAT = ["밸브 교체", "필터 청소", "센서 교정", "배선 점검", "커넥터 교체"];
+
+// 기록마다 다른 최근 조치 이력 3건을 오늘에서 2~3주 간격으로 거슬러 생성
+function historyOf(i: number): ActionHistory[] {
+  return [0, 1, 2].map((k) => {
+    const d = addDays(TODAY, -(21 + k * 16 + (i % 5)));
+    return { date: `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, owner: OWNERS[1 + ((i + k) % 3)], what: HISTORY_WHAT[(i + k) % HISTORY_WHAT.length] };
+  });
+}
+
 const shifted = (md: string) => addDays(new Date(2026, Number(md.slice(0, 2)) - 1, Number(md.slice(3, 5))), SHIFT);
 
 // Figma 10줄 뒤로 같은 장치·센서를 반나절 간격으로 거슬러 올라가며 14줄 더 생성
@@ -72,6 +90,9 @@ export const ACTIONS: ActionItem[] = [...FIGMA_ROWS, ...extra].map(([md, time, d
   car,
   action,
   inspect,
+  // 조치가 끝난 기록은 담당자를 두고, 미조치는 아직 배정 전으로 지정
+  owner: action === "완료" ? OWNERS[1 + (i % 3)] : "미지정",
+  history: historyOf(i),
 }));
 
 // 처음 조회 기간(가장 오래된 기록 날 ~ 오늘) 지정 — 처음엔 전체 기록이 보이도록
@@ -104,3 +125,40 @@ export const CHRONIC: { name: string; count: number }[] = [
 // 발생 시각을 표에 보일 "월-일 시:분" 문구로 변환
 export const whenText = (a: ActionItem) => `${a.ymd.slice(5)} ${a.time}`;
 export const atOf = (a: ActionItem) => new Date(Number(a.ymd.slice(0, 4)), Number(a.ymd.slice(5, 7)) - 1, Number(a.ymd.slice(8, 10)), Number(a.time.slice(0, 2)), Number(a.time.slice(3, 5)));
+
+// 장치 코드와 센서 이름을 차량 투시도 장치 이름으로 연결
+const DEVICE_PART: Record<string, string> = {
+  AXLE_BEARING: "차축 베어링",
+  DRIVING_GEAR: "드라이빙 기어",
+  TRACTION_MOTOR: "견인 전동기",
+  CMSB: "배전반",
+  ECU: "추진 제어 장치",
+  MICOM_COOLER: "냉방 장치",
+  MICOM_AIRPURIFIER: "공기질 개선 장치",
+  DCU: "출입문 장치",
+  VVVF: "추진 제어 장치",
+  SIV: "보조 전원 장치",
+};
+const SENSOR_PART: [string, string][] = [
+  ["압축기", "주공기 압축기"],
+  ["베어링", "차축 베어링"],
+  ["모터", "견인 전동기"],
+  ["냉각수", "냉방 장치"],
+  ["오일", "드라이빙 기어"],
+  ["축전지", "축전지"],
+];
+export const devicePart = (a: ActionItem) => DEVICE_PART[a.device] ?? "배전반";
+export const sensorPart = (a: ActionItem) => SENSOR_PART.find(([k]) => a.sensor.includes(k))?.[1] ?? devicePart(a);
+
+// 센서 이름에 맞는 단위와 게이지 이름(장치 쪽 낱말을 뺀 짧은 이름) 지정
+export const sensorUnit = (a: ActionItem) => (a.sensor.includes("압력") ? "MPa" : a.sensor.includes("진동") ? "g" : a.sensor.includes("전압") ? "V" : "정규화");
+export const sensorShort = (a: ActionItem) => a.sensor.replace(/^(압축기|베어링|모터|축전지)\s/, "");
+
+// 빈발 랭킹에서 이 장치·센서의 순위와 횟수 찾기
+export function chronicOf(a: ActionItem) {
+  const i = CHRONIC.findIndex((c) => {
+    const [part, dev] = c.name.split(" · ");
+    return a.device.startsWith(dev) && a.sensor.includes(part);
+  });
+  return i < 0 ? null : { rank: i + 1, count: CHRONIC[i].count };
+}

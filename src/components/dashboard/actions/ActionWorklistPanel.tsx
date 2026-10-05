@@ -49,10 +49,10 @@ function Row({ a, selected, onToggle, onProcess }: RowProps) {
       <Cell text={`${a.formation} · ${a.car}호차`} width={130} />
       <Cell text={a.action} type={a.action === "미조치" ? "alert" : "highlight"} width={STATE_W} align="center" />
       <Cell text={a.inspect} type={a.inspect === "완료" ? "highlight" : "body"} width={STATE_W} align="center" />
-      {/* 처리 칸은 행 선택과 따로 그 행만 조치완료 확인을 열도록 처리 */}
+      {/* 처리 칸은 행 선택과 따로 그 행의 조치 상세 시트를 열도록 처리 */}
       <button
         type="button"
-        aria-label={`${a.device} · ${a.sensor} 처리`}
+        aria-label={`${whenText(a)} ${a.device} · ${a.sensor} 처리`}
         onClick={(e) => {
           e.stopPropagation();
           onProcess();

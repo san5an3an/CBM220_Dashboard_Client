@@ -5,6 +5,7 @@ import { ListItem } from "@/components/cards";
 import { Dialog } from "@/components/navigation";
 import { DashboardShell } from "../DashboardShell";
 import { inDateTimeRange } from "../DateRangeField";
+import { type ActionDraft, ActionDetailModal } from "./ActionDetailModal";
 import { type ActionQuery, ActionPipelinePanel, INITIAL_QUERY } from "./ActionPipelinePanel";
 import { ActionWorklistPanel } from "./ActionWorklistPanel";
 import { ChronicSensorPanel } from "./ChronicSensorPanel";
@@ -38,6 +39,8 @@ export function ActionManagement() {
   const [selected, setSelected] = useState<Set<number>>(() => new Set());
   // 조치완료 확인 창에 올릴 대상 지정 (없으면 닫힘)
   const [confirm, setConfirm] = useState<number[] | null>(null);
+  // 상세 시트를 열 때마다 양식을 새로 채우도록 순번 증가
+  const [detail, setDetail] = useState<{ open: boolean; session: number; id: number | null }>({ open: false, session: 0, id: null });
 
   const list = useMemo(() => filterActions(items, query), [items, query]);
   const counts = {
@@ -65,6 +68,25 @@ export function ActionManagement() {
   };
 
   const targets = items.filter((a) => confirm?.includes(a.id));
+  const detailItem = items.find((a) => a.id === detail.id);
+
+  // 입력한 조치를 기록에 반영하고 새로 조치완료가 되면 맨 위 이력에 오늘 날짜로 추가
+  const saveDetail = (d: ActionDraft) => {
+    const now = new Date();
+    const today = `${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    setItems((prev) =>
+      prev.map((a) =>
+        a.id === detail.id
+          ? {
+              ...a,
+              ...d,
+              history: a.action === "미조치" && d.action === "완료" ? [{ date: today, owner: d.owner, what: "조치" }, ...a.history].slice(0, 3) : a.history,
+            }
+          : a,
+      ),
+    );
+    setDetail((s) => ({ ...s, open: false }));
+  };
 
   return (
     <DashboardShell title="조치 관리" page={3} alert={{ label: "조치 대기", count: open }}>
@@ -84,7 +106,7 @@ export function ActionManagement() {
           onPage={setPage}
           selected={selected}
           onToggle={toggle}
-          onProcess={(id) => setConfirm([id])}
+          onProcess={(id) => setDetail((s) => ({ open: true, session: s.session + 1, id }))}
           onBulkDone={() => setConfirm([...selected])}
         />
         <ChronicSensorPanel />
@@ -104,6 +126,9 @@ export function ActionManagement() {
           ))}
         </div>
       </Dialog>
+      {detailItem && (
+        <ActionDetailModal key={detail.session} open={detail.open} item={detailItem} onClose={() => setDetail((s) => ({ ...s, open: false }))} onSubmit={saveDetail} />
+      )}
     </DashboardShell>
   );
 }
